@@ -141,18 +141,43 @@ files the previous one owns; no parallel runs anywhere in Phase 2.
 
 ## Phase 3 — Dungeon, puzzles, boss (Gate B)
 
-**Goal:** Triforce Shrine dungeon (GAME_DESIGN §5): room system + transitions,
-dungeon minimap with reciprocity, keys, Gale Boomerang item + full curriculum
-(crystals, gates, ordered-seal rooms), ironshell miniboss, **Granite Warden** with all
-3 phases + cinematic intro, credits stub, victory state, checkpoints. B-item cycling
-with bombs + boomerang.
+**Goal:** Triforce Shrine dungeon (GAME_DESIGN §5): room system + slide
+transitions, dungeon minimap with reciprocity, keys, Gale Boomerang item + full
+curriculum (crystals, gates, carry-a-flame, ordered-seal rooms), Ironshell duo
+miniboss, **Granite Warden** with all 3 phases + cinematic intro, credits stub,
+victory state, checkpoints. B-item cycling with bombs + boomerang.
 
-Planner writes the Phase 3 briefs **after 2C lands** — they must be authored
-against 2C's real code: the `game::puzzle` hit-check layer (boomerang = a new
-source of the same chime/crank/plate hit events, retro-enabling overworld
-one-throw solves), `BUTTON_CYCLE` B-item seam (boomerang = selected_item 2),
-the skeleton `stagger` hook (boomerang stun), the `TUNIC_UNLOCKED` shop flag
-(post-boss), and the ruins far-switch bonus site.
+Built in two **sequential** sub-phases (briefs are authoritative, written
+against 2C's real code — the tool-agnostic `game::puzzle` hit layer,
+`BUTTON_CYCLE` seam, `skeleton::stagger` hook, `TUNIC_UNLOCKED` flag, and the
+ruins far-switch preview site):
+
+- **Phase 3A** (`WORKER_BRIEF_PHASE3A.md`) — dungeon + tool: `MapId::Dungeon`
+  (one contiguous MapDef; codec 4), `game::rooms` (room rects, camera lock,
+  slide transitions, tile doors/shutters), `game::items::boomerang`
+  (throw/return flight, pass-through enemy hits, generic `enemies::stun` +
+  skeleton stagger, `StyleVerb::BoomerangStun`, B-item slot 2, and a new
+  projectile arm in `puzzle::process_hits` so overworld chimes/cranks/
+  barricades retro-enable with zero special-casing), Hall of Trials shutter
+  gauntlet → boomerang chest, Hall of Currents crystal curriculum +
+  carry-a-flame, two ordered seal rooms, 2 small keys + boss key on clued
+  paths, dungeon checkpoints 7/8 (+ dungeon boot-from-save), discovered-room
+  dungeon minimap driven by the same `rooms()` table that paints the doors
+  (reciprocity by construction + load assert). Sanctum Core + Guardian Arena
+  ship dressed-but-dormant (sign stubs, `GRP_DNG_SANCTUM=94` locked). Catalog
+  280–309, flags 100–139.
+- **Phase 3B** (`WORKER_BRIEF_PHASE3B.md`, starts only after 3A's completion
+  entry) — climax + victory: Ironshell duo miniboss (front armor;
+  boomerang-behind / perfect-block / stun answers) in the Sanctum Core,
+  Guardian Arena dressing + pre-boss checkpoint 9, Granite Warden
+  (entity boss + two WindCrystal entities + PebbleCrawlers; crystal
+  prime-both-within-window → gale stagger → 4 s core windows; phases at
+  75/35 with orbiting crystals, arm sweep, rim crumble, 5-way fan, crystal
+  swaps, fake-core flash; boss-only segmented HP bar; cinematic intro with
+  name plate; `HITSTOP_BOSS_BREAK` finally used), defeat → heart container +
+  Shard of Courage → credits stub → village return beat, `TUNIC_UNLOCKED`
+  shop row live, Act 1 victory predicate (`SHARD_OF_COURAGE` flag) for
+  Phase 4 chapter select. Catalog 310–319, flags 140–149.
 
 **Acceptance criteria**
 1. Full critical path: New Game → 3 gems → shrine → boomerang → 2 seals → Warden →
@@ -163,8 +188,13 @@ the skeleton `stagger` hook (boomerang stun), the `TUNIC_UNLOCKED` shop flag
    phase 3 fake-core beat works.
 4. Dungeon minimap exits match room topology exactly.
 
-**Ownership:** `game::puzzle` + dungeon maps = worker A; `game::boss` +
-`game::items::boomerang` = worker B.
+**Ownership:** 3A = `game::{rooms,items::boomerang,puzzle::dungeon,
+ui::dungeon_map,events}` + `content::{maps::dungeon,puzzles_dungeon,
+art::tiles_dungeon/props_dungeon/items}` + headroom extractions
+(`world::entity_data`, `events.rs`). 3B = `game::{boss,enemies::ironshell,
+ui::credits}` + `content::art::boss` + victory wiring. **Sequential only** —
+3B edits arena rooms, events routing, and combat arms that 3A owns; do not
+run them concurrently.
 
 ---
 

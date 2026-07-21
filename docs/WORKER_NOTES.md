@@ -408,3 +408,50 @@ Read Phase 2C-A completion + frozen seams (puzzle API, BUTTON_CYCLE, AttackKind:
 ### Ready for Fable Phase 3 briefs?
 **YES** — Phase 2C overall (2C-A + 2C-B) complete. Soft critical path has real gem gates + bombs/shop + four Act 1B families + camp 3-wave war-chest.
 
+## Phase 3 planning — 2026-07-21 (Planner, Fable 5)
+
+- Phase 2C accepted at `7fa19b3`. Phase 3 split into two **sequential**
+  briefs written against the real 2C code:
+  `WORKER_BRIEF_PHASE3A.md` (dungeon rooms/slides, Gale Boomerang, crystal +
+  flame + ordered-seal curriculum, keys/doors, dungeon minimap; Sanctum Core
+  + Guardian Arena shipped dormant) then `WORKER_BRIEF_PHASE3B.md`
+  (Ironshell duo, Granite Warden 3 phases, victory/credits/village return,
+  Gate B). 3B is blocked on 3A's completion entry here; 3A's frozen seams
+  for 3B are its brief §6.
+- Split rationale: the boomerang is load-bearing for the curriculum AND the
+  boss, so it lives with the dungeon worker (3A) — 3B consumes it as a
+  frozen seam (`AttackKind::Boomerang` pass-through + `throw_id` dedupe +
+  `enemies::stun`). This differs from the old PHASE_PLAN "puzzle=A,
+  boss+boomerang=B" sketch, which would have made the curriculum worker
+  build against a tool that didn't exist yet.
+- Key reality deltas the briefs encode: room-to-room movement is **camera
+  slides inside one `MapDef`** (additive `Camera::set_bounds`), not
+  `switch_map` fades — the 2A fade/transition seam stays map-level
+  (lobby↔dungeon). Doors/shutters/gates are **tiles** (2C precedent: no
+  entity solidity). The boomerang joins `puzzle::process_hits` as a third
+  player projectile arm that does NOT set `hit`/despawn on tile contact, so
+  one throw can ring multiple chimes/crystals — this is what retro-enables
+  the overworld one-throw solves with zero special-casing. `Game::new`
+  currently forces boot to Overworld/Arena — 3A extends it so dungeon saves
+  boot the dungeon (checkpoints 7/8; 3B adds pre-boss 9).
+- Headroom mandated up front: `world/entity.rs` (598) and `lib.rs` (591) are
+  at the cap — 3A M1 extracts `entity_data.rs` and `events.rs` before any
+  feature code (same pattern as 2C-A's `debug.rs` extract).
+- Allocations: MapId 4 = Dungeon; catalog tiles 280–309 (3A) / 310–319 (3B);
+  flags 100–139 (3A: item/keys/doors/seals/rooms) / 140–149 (3B:
+  intro/defeat/heart/shard/tunic-bought) + `TUNIC_UNLOCKED=98` set by 3B;
+  spawner groups 90–94 (94 = Sanctum miniboss, locked until 3B); Loot gains
+  Boomerang/SmallKey/BossKey; `StyleVerb::BoomerangStun` (verb_cooldowns →
+  7). Keys are derived from flags (chest flags minus door-opened flags) — no
+  new SaveGame fields; version stays 2.
+- Dungeon minimap reciprocity is data-driven: one `rooms()` exits table
+  drives both the painted door tiles and the map render, plus a load-time
+  debug assert — acceptance criterion 4 can't drift.
+- Boss design locked to GAME_DESIGN §6 with entity crystals (not the 2C tile
+  crystals — they orbit/swap in P2/P3); core damage gate enforced in
+  `apply_attack_hit`; `HITSTOP_BOSS_BREAK=12` (reserved since Phase 1)
+  finally consumed. Heart pieces stay complete at 4 — Warden drops a full
+  heart container instead.
+- PHASE_PLAN Phase 3 section rewritten to match. No gameplay code in this
+  commit.
+
