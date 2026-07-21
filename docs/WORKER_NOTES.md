@@ -26,3 +26,23 @@
 
 ### Gate A
 Ready: scaffold proves render, fixed loop, keyboard + touch (+ gamepad code), audio unlock/beep, save roundtrip, Netlify-ready `dist/`.
+
+## Phase 1 planning — 2026-07-21 (Planner, Fable 5)
+
+- Gate A accepted at `f65e9f5`. Phase 1 split into two sequential briefs:
+  `WORKER_BRIEF_PHASE1A.md` (seams + player kit + combat/juice/energy/style +
+  functional HUD + SFX seam) then `WORKER_BRIEF_PHASE1B.md` (atlas pipeline +
+  sprites + slime/bat/octorok + wave director + HUD skin + F2 viewer).
+  1B is blocked on 1A's completion entry here — the seam contract is
+  PHASE1A §5 and freezes when 1A lands.
+- Briefs were written against the *actual* scaffold, not the ARCHITECTURE tree:
+  `engine::atlas` does not exist yet (1B creates it); `Draw` is rect/circle/
+  text-only (1A adds camera offset + line, 1B adds sprites); `InputState`
+  buttons have held/pressed only; `GameEvent::{Beep,Save}` is replaced by
+  `{Sfx(SfxId),Save}` in 1A (app match updated accordingly).
+- Content→engine SFX/art data flows through tiny adapters (app for sfx specs,
+  game::assets for art decode) to preserve the dependency law
+  (`content` depends on nothing, `engine` never depends on `content`).
+- Shield is temporarily on the Item button (K / pad 2) until B-items arrive in
+  Phase 2; planner will re-map when boomerang/bombs land.
+- PHASE_PLAN.md Phase 1 section updated with the 1A/1B split and real paths.

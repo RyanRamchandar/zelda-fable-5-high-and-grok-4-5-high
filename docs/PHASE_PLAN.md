@@ -39,17 +39,34 @@ dash, energy meter, style ranks, damage pipeline with all juice items (§2 check
 B-item), atlas pipeline with first real sprites (player full sheet, 3 enemies, tiles
 for a test arena), SFX set for all combat verbs, debug sprite-motion viewer.
 
+Split into two **sequential** sub-phases (briefs are authoritative):
+
+- **Phase 1A** (`WORKER_BRIEF_PHASE1A.md`): shared seams first — `game::math`,
+  `game::world/{mod,entity,physics,camera}`, `WorldEvent` queue, rewritten
+  `game::lib` system order, `content::maps::arena` gray-box `MapDef` — then the
+  full player kit, damage pipeline + juice, energy/style, pickups/fountain,
+  functional rect HUD, SFX seam (`content::audio::sfx` specs + `engine::audio`
+  synth + `app` adapter), target dummies, F1 debug overlay. Extends existing
+  `engine::render::Draw` (camera offset, line) and `engine::input` (debug keys).
+- **Phase 1B** (`WORKER_BRIEF_PHASE1B.md`, starts only after 1A lands): creates
+  `engine::atlas` (does not exist in the scaffold yet) + `Draw::sprite`,
+  `content::art/*` (palette + grids: player, enemies, tiles, ui),
+  `game::assets` bake glue, `game::enemies/*` (slime, bat, octorok, rocks,
+  wave director), F2 sprite-motion viewer, HUD sprite skin, enemy SFX.
+
 **Acceptance criteria**
 1. Gray-box arena: kill waves of 3 enemy families with the full verb set; combo,
    charge-spin, beam, shield, perfect block, dash all work per spec numbers.
 2. Juice checklist (§2) fully present; hitstop/knockback/damage numbers/callouts.
 3. Energy + style systems live and readable; fairy fountain object restores both.
-4. Player sprite sheet passes in-motion QA at gameplay scale.
+4. Player sprite sheet passes in-motion QA at gameplay scale (F2 viewer).
 5. 60 fps on a mid laptop; all SFX distinct.
 
-**Ownership:** `game::player`, `game::combat`, `game::fx` = worker A;
-`game::enemies`, `game::ui` (HUD), `content::art` = worker B (if parallel).
-Shared seams (`world`, events) land in worker A first.
+**Ownership:** worker A (1A) = `game::{lib,math,world,player,combat,fx,items,ui
+(functional),enemies (stub)}`, `content::{maps,audio::sfx}`, small `engine`
+render/audio/input extensions, `app` event routing. Worker B (1B) =
+`engine::atlas` + `Draw::sprite`, `content::art`, `game::{enemies,assets}`, HUD
+skin, debug viewer. Seam contract frozen at 1A completion (WORKER_NOTES entry).
 
 ---
 
