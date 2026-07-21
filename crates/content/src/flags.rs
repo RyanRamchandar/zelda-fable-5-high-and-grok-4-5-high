@@ -38,6 +38,21 @@ pub const GEM_WISDOM: u16 = 72;
 
 pub const GROUP_CAMP_GUARD: u16 = 80;
 
+pub const CHEST_RUINS_BONUS: u16 = 20;
+
+/// Phase 2C puzzle / economy flags.
+pub const PUZZLE_CHIME_GATE_1: u16 = 90;
+pub const PUZZLE_CHIME_GATE_2: u16 = 91;
+pub const PUZZLE_CHIMES_DONE: u16 = 92;
+pub const PUZZLE_PLATES_DONE: u16 = 93;
+pub const WALL_GROVE_OPEN: u16 = 94;
+pub const BRIDGE_LOWERED: u16 = 95;
+pub const SHOP_BOMB_BAG: u16 = 96;
+pub const SHOP_BOMBS_UNLOCKED: u16 = 97;
+pub const TUNIC_UNLOCKED: u16 = 98;
+/// Ruins far-switch gate (Phase 3 boomerang preview).
+pub const PUZZLE_RUINS_FAR: u16 = 99;
+
 /// Encounter group ids (spawner).
 pub const GRP_MEADOW: u16 = 10;
 pub const GRP_GROVE: u16 = 30;

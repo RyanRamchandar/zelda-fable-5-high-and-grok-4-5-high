@@ -6,8 +6,9 @@ use wasm_bindgen::JsCast;
 use web_sys::{KeyboardEvent, Window};
 
 use super::{
-    SharedInput, BUTTON_ATTACK, BUTTON_CONFIRM, BUTTON_DASH, BUTTON_INTERACT, BUTTON_ITEM,
-    BUTTON_PAUSE, DEBUG_ACTION, DEBUG_MAP, DEBUG_OVERLAY, DEBUG_TELEPORT, DEBUG_VIEWER,
+    SharedInput, BUTTON_ATTACK, BUTTON_CONFIRM, BUTTON_CYCLE, BUTTON_DASH, BUTTON_INTERACT,
+    BUTTON_ITEM, BUTTON_PAUSE, DEBUG_ACTION, DEBUG_MAP, DEBUG_OVERLAY, DEBUG_TELEPORT,
+    DEBUG_VIEWER,
 };
 
 pub fn attach(
@@ -84,6 +85,7 @@ fn apply_key(state: &mut SharedInput, code: &str, down: bool) -> bool {
         "KeyE" => state.key_held[BUTTON_INTERACT] = down,
         "Escape" => state.key_held[BUTTON_PAUSE] = down,
         "Enter" => state.key_held[BUTTON_CONFIRM] = down,
+        "KeyQ" => state.key_held[BUTTON_CYCLE] = down,
         "F1" => {
             state.debug_held[DEBUG_OVERLAY] = down;
             if down {

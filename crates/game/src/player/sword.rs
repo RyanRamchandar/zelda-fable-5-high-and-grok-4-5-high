@@ -324,7 +324,8 @@ pub fn update_beams(world: &mut World) {
                 | EntityKind::Sign
                 | EntityKind::Npc
                 | EntityKind::Chest
-                | EntityKind::Gem => continue,
+                | EntityKind::Gem
+                | EntityKind::Bomb => continue,
             }
             let EntityData::Beam(b) = &mut e.data else {
                 continue;

@@ -6,6 +6,7 @@ pub mod palette;
 pub mod player_actions;
 pub mod player_base;
 pub mod props_interior;
+pub mod props_puzzle;
 pub mod props_village;
 pub mod props_wild;
 pub mod tiles;
@@ -166,6 +167,14 @@ pub fn all_bakes() -> Vec<SpriteBake> {
         bake(&props_wild::PROP_RUBBLE),
         bake(&props_wild::PROP_BRAZIER),
         bake(&props_wild::PROP_PALE_TREE),
+        bake(&props_puzzle::PROP_GATE),
+        bake(&props_puzzle::PROP_BLOCK),
+        bake(&props_puzzle::PROP_PLATE_UP),
+        bake(&props_puzzle::PROP_PLATE_DOWN),
+        bake(&props_puzzle::PROP_BARRICADE),
+        bake(&props_puzzle::PROP_CRANK),
+        bake(&props_puzzle::PROP_BRIDGE_LOWERED),
+        bake(&props_puzzle::PROP_BOMB),
         bake(&props_interior::PROP_RUG),
         bake(&props_interior::PROP_TABLE),
         bake(&props_interior::PROP_BED),

@@ -43,6 +43,28 @@ pub fn paint(map: &mut MapDef) {
         map.set(x + 1, y, TileLayer::Detail, T_FLOWER_BED);
     }
 
+    // Teaching chime gate 1 (SW→NE corridor near (50,110)).
+    map.set(48, 109, TileLayer::Detail, T_CHIME);
+    map.spawns.push(SpawnDef {
+        tx: 47,
+        ty: 109,
+        kind: SpawnKind::Sign {
+            text: TextId::ChimeGateSign,
+        },
+        group: 0,
+    });
+
+    // Teaching chime gate 2 (east corridor approach).
+    map.set(77, 110, TileLayer::Detail, T_CHIME);
+    map.spawns.push(SpawnDef {
+        tx: 76,
+        ty: 109,
+        kind: SpawnKind::Sign {
+            text: TextId::ChimeGateSign,
+        },
+        group: 0,
+    });
+
     // NE Courage Gem clearing.
     map.fill_rect_layer(68, 108, 80, 122, TileLayer::Ground, T_GRASS_A);
     for y in 108..122 {
@@ -70,8 +92,13 @@ pub fn paint(map: &mut MapDef) {
         group: 0,
     });
 
-    // Cracked bomb-wall (inert) + pale tree secret.
+    // Cracked bomb-wall + pale tree secret.
     map.set(30, 185, TileLayer::Ground, T_CRACKED_WALL);
+    map.entries.push(EntryPoint {
+        id: 32,
+        tx: 30,
+        ty: 187,
+    });
     map.set(22, 155, TileLayer::Ground, T_PALE_TREE);
     // Walk-through pale tree glade → fairy + heart piece chest nearby.
     map.set_flags(22, 155, 0);

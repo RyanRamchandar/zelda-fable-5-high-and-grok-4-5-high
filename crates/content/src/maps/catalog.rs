@@ -114,6 +114,15 @@ pub const T_COUNTER: u16 = 257;
 pub const T_POT: u16 = 258;
 pub const T_DOOR_OPEN: u16 = 259;
 
+// —— 260+ Phase 2C puzzle interactives ——
+pub const T_GATE: u16 = 260;
+pub const T_BLOCK: u16 = 261;
+pub const T_PLATE_UP: u16 = 262;
+pub const T_PLATE_DOWN: u16 = 263;
+pub const T_BARRICADE: u16 = 264;
+pub const T_CRANK: u16 = 265;
+pub const T_BRIDGE_LOWERED: u16 = 266;
+
 /// Compatibility aliases (Phase 1 consumers / arena builder).
 pub const FLOOR: u16 = T_FLOOR_A;
 pub const WALL: u16 = T_WALL;
@@ -244,6 +253,13 @@ pub fn tile_info(id: u16) -> &'static TileInfo {
         T_COUNTER => &TI_COUNTER,
         T_POT => &TI_POT,
         T_DOOR_OPEN => &TI_DOOR_OPEN,
+        T_GATE => &TI_GATE,
+        T_BLOCK => &TI_BLOCK,
+        T_PLATE_UP => &TI_PLATE_UP,
+        T_PLATE_DOWN => &TI_PLATE_DOWN,
+        T_BARRICADE => &TI_BARRICADE,
+        T_CRANK => &TI_CRANK,
+        T_BRIDGE_LOWERED => &TI_BRIDGE_LOWERED,
         _ => &VOID,
     }
 }
@@ -329,6 +345,13 @@ pub fn all_tile_ids() -> &'static [u16] {
         T_COUNTER,
         T_POT,
         T_DOOR_OPEN,
+        T_GATE,
+        T_BLOCK,
+        T_PLATE_UP,
+        T_PLATE_DOWN,
+        T_BARRICADE,
+        T_CRANK,
+        T_BRIDGE_LOWERED,
     ]
 }
 
@@ -455,3 +478,10 @@ static TI_SHELF: TileInfo = solid("prop_shelf");
 static TI_COUNTER: TileInfo = solid("prop_counter");
 static TI_POT: TileInfo = solid("prop_pot");
 static TI_DOOR_OPEN: TileInfo = walk("cave_mouth");
+static TI_GATE: TileInfo = solid("prop_gate");
+static TI_BLOCK: TileInfo = solid("prop_block");
+static TI_PLATE_UP: TileInfo = walk("prop_plate_up");
+static TI_PLATE_DOWN: TileInfo = walk("prop_plate_down");
+static TI_BARRICADE: TileInfo = solid("prop_barricade");
+static TI_CRANK: TileInfo = solid("prop_crank");
+static TI_BRIDGE_LOWERED: TileInfo = walk("prop_bridge_lowered");

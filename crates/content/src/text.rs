@@ -14,6 +14,14 @@ pub enum TextId {
     VillagerC,
     KidHint,
     ChimeSign,
+    ChimeGateSign,
+    PlateCourtSign,
+    FarSwitchSign,
+    CrankSign,
+    CourageGemSealed,
+    ShopkeeperIntro,
+    ShopkeeperAfterBag,
+    ShopkeeperAfterHeart,
     RuinsTablet,
     ShrineLore,
     SealHolds0,
@@ -46,7 +54,7 @@ pub enum NpcId {
 pub fn npc_lines(npc: NpcId) -> TextId {
     match npc {
         NpcId::Elder => TextId::ElderIntro,
-        NpcId::Shopkeeper => TextId::ShopkeeperStub,
+        NpcId::Shopkeeper => TextId::ShopkeeperIntro,
         NpcId::VillagerA => TextId::VillagerA,
         NpcId::VillagerB => TextId::VillagerB,
         NpcId::VillagerC => TextId::VillagerC,
@@ -75,7 +83,7 @@ pub fn text(id: TextId) -> &'static [&'static str] {
         ],
         TextId::ShopSign => &[
             "Mosslight Goods",
-            "Open when stock arrives.",
+            "Bombs, bags, and heart pieces.",
         ],
         TextId::WaypostShrine => &[
             "NORTH — Triforce Shrine",
@@ -96,8 +104,19 @@ pub fn text(id: TextId) -> &'static [&'static str] {
             "Grove, camp, ruins—then shrine.",
         ],
         TextId::ShopkeeperStub => &[
-            "Stock arrives soon, friend.",
-            "Come back when the shelves fill.",
+            "Welcome! Browse the shelves.",
+        ],
+        TextId::ShopkeeperIntro => &[
+            "Welcome! Bombs for the bold,",
+            "and a heart piece for the patient.",
+        ],
+        TextId::ShopkeeperAfterBag => &[
+            "That bag suits you.",
+            "Need more bombs? Always in stock.",
+        ],
+        TextId::ShopkeeperAfterHeart => &[
+            "Your courage fills the room!",
+            "Come back anytime for bombs.",
         ],
         TextId::VillagerA => &[
             "Behind the shop hedge, coin glints",
@@ -117,8 +136,27 @@ pub fn text(id: TextId) -> &'static [&'static str] {
             "in the meadow and wait…",
         ],
         TextId::ChimeSign => &[
-            "The chimes answer a single gale…",
-            "(puzzle sealed—return later)",
+            "Three chimes, one breath of wind.",
+            "Let none fall silent.",
+        ],
+        TextId::ChimeGateSign => &[
+            "A gale — or a keen edge —",
+            "wakes the chime.",
+        ],
+        TextId::PlateCourtSign => &[
+            "Stone remembers weight.",
+            "Two watchers must be held",
+            "down at once.",
+        ],
+        TextId::FarSwitchSign => &["Seen, not touched. Not yet."],
+        TextId::CrankSign => &[
+            "A crank across the water.",
+            "A blade's edge, flung true,",
+            "might turn it.",
+        ],
+        TextId::CourageGemSealed => &[
+            "A ward of still air surrounds",
+            "the gem…",
         ],
         TextId::RuinsTablet => &[
             "Three gems, three virtues…",

@@ -16,7 +16,8 @@ pub const BUTTON_DASH: usize = 2;
 pub const BUTTON_INTERACT: usize = 3;
 pub const BUTTON_PAUSE: usize = 4;
 pub const BUTTON_CONFIRM: usize = 5;
-pub const BUTTON_COUNT: usize = 6;
+pub const BUTTON_CYCLE: usize = 6;
+pub const BUTTON_COUNT: usize = 7;
 
 pub const DEBUG_OVERLAY: usize = 0;
 pub const DEBUG_VIEWER: usize = 1;

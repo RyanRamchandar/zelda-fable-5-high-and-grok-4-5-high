@@ -28,6 +28,7 @@ pub enum EntityKind {
     Npc,
     Chest,
     Gem,
+    Bomb,
 }
 
 /// Collision layer bits (bitmask).
@@ -79,6 +80,7 @@ pub enum EntityData {
     Npc(NpcData),
     Chest(ChestData),
     Gem(GemData),
+    Bomb(BombData),
 }
 
 #[derive(Clone, Debug)]
@@ -103,6 +105,13 @@ pub struct ChestData {
 pub struct GemData {
     pub id: u8,
     pub taken: bool,
+    /// Courage gem ward until chime finale (`PUZZLE_CHIMES_DONE`).
+    pub sealed: bool,
+}
+
+#[derive(Clone, Debug)]
+pub struct BombData {
+    pub fuse: u16,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -144,6 +153,11 @@ pub struct PlayerData {
     pub no_dmg_streak: u16,
     pub out_of_combat: u16,
     pub walk_timer: u16,
+    pub bombs: u8,
+    pub bomb_cap: u8,
+    /// 0 = none, 1 = bombs (2 = boomerang in Phase 3).
+    pub selected_item: u8,
+    pub item_cycle_flash: u8,
 }
 
 impl PlayerData {
@@ -175,6 +189,10 @@ impl PlayerData {
             no_dmg_streak: 0,
             out_of_combat: 0,
             walk_timer: 0,
+            bombs: 0,
+            bomb_cap: 0,
+            selected_item: 0,
+            item_cycle_flash: 0,
         }
     }
 
@@ -451,7 +469,11 @@ impl Entity {
             health: None,
             knockback: Vec2::ZERO,
             anim: AnimState::default(),
-            data: EntityData::Gem(GemData { id, taken }),
+            data: EntityData::Gem(GemData {
+                id,
+                taken,
+                sealed: false,
+            }),
             alive: true,
         }
     }

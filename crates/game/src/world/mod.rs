@@ -28,6 +28,7 @@ pub enum AttackKind {
     Beam,
     #[allow(dead_code)]
     DebugShot,
+    Bomb,
 }
 
 #[derive(Clone, Debug)]

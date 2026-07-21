@@ -63,6 +63,12 @@ pub struct SaveGame {
     /// Compact fog bitset (113 words). Missing/short → treated as empty fog.
     #[serde(default)]
     pub fog: Vec<u32>,
+    #[serde(default)]
+    pub bombs: u8,
+    #[serde(default)]
+    pub bomb_cap: u8,
+    #[serde(default)]
+    pub selected_item: u8,
 }
 
 impl SaveGame {
@@ -78,6 +84,9 @@ impl SaveGame {
             gems: 0,
             flags: Vec::new(),
             fog: vec![0; FOG_WORDS],
+            bombs: 0,
+            bomb_cap: 0,
+            selected_item: 0,
         }
     }
 

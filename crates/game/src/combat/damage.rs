@@ -90,14 +90,16 @@ pub fn apply_attack_hit(
         SfxId::EnemyHurt
     }));
 
-    let verb = match attack {
-        AttackKind::Finisher => StyleVerb::Finisher,
-        AttackKind::Spin => StyleVerb::ChargeSpin,
+    if let Some(verb) = match attack {
+        AttackKind::Finisher => Some(StyleVerb::Finisher),
+        AttackKind::Spin => Some(StyleVerb::ChargeSpin),
         AttackKind::Slash | AttackKind::Backslash | AttackKind::Beam | AttackKind::DebugShot => {
-            StyleVerb::Slash
+            Some(StyleVerb::Slash)
         }
-    };
-    world.push_event(WorldEvent::StyleAction(verb));
+        AttackKind::Bomb => None,
+    } {
+        world.push_event(WorldEvent::StyleAction(verb));
+    }
 
     if killed {
         if is_dummy {
@@ -249,7 +251,8 @@ fn reflect_projectiles_near(world: &mut World, center: Vec2) {
             | EntityKind::Sign
             | EntityKind::Npc
             | EntityKind::Chest
-            | EntityKind::Gem => {}
+            | EntityKind::Gem
+            | EntityKind::Bomb => {}
         }
     }
 }

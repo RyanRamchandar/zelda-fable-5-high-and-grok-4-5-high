@@ -40,6 +40,9 @@ pub struct PlayerPersist {
     pub gems: u8,
     pub flags: Vec<u16>,
     pub checkpoint: u8,
+    pub bombs: u8,
+    pub bomb_cap: u8,
+    pub selected_item: u8,
 }
 
 impl PlayerPersist {
@@ -54,6 +57,9 @@ impl PlayerPersist {
             gems,
             flags,
             checkpoint,
+            bombs: pd.bombs,
+            bomb_cap: pd.bomb_cap,
+            selected_item: pd.selected_item,
         }
     }
 
@@ -64,6 +70,9 @@ impl PlayerPersist {
         pd.rupees = self.rupees;
         pd.style_points = self.style_points;
         pd.style_rank = self.style_rank;
+        pd.bombs = self.bombs;
+        pd.bomb_cap = self.bomb_cap;
+        pd.selected_item = self.selected_item;
     }
 }
 
@@ -82,9 +91,14 @@ pub fn switch_map(game: &mut Game, target: MapId, entry: u8) {
     apply_persist(&mut world, &persist);
     let mut spawner = Spawner::populate(&mut world);
     spawner.apply_save(&mut world, persist.gems, &persist.flags);
+    crate::puzzle::paint_closed(&mut world, target, &persist.flags);
     if target == MapId::Overworld {
         restore_shrine_door(&mut world, &persist.flags);
+        crate::puzzle::restore(&mut world, &persist.flags);
+        crate::puzzle::chimes::apply_courage_seal_from_flags(&mut world, &persist.flags);
         game.ui.minimap.build_class_map(&world.map);
+    } else {
+        crate::puzzle::restore(&mut world, &persist.flags);
     }
     world.camera.snap_to(spawn.add(Vec2::new(8.0, 8.0)));
     game.world = world;
@@ -92,6 +106,7 @@ pub fn switch_map(game: &mut Game, target: MapId, entry: u8) {
     game.current_map = target;
     game.gems = persist.gems;
     game.flags = persist.flags;
+    game.puzzle = crate::puzzle::PuzzleState::for_map(target);
     game.chunk_cache_reset = true;
 }
 
@@ -114,6 +129,9 @@ fn extract_persist(game: &Game) -> PlayerPersist {
         gems,
         flags,
         checkpoint,
+        bombs: 0,
+        bomb_cap: 0,
+        selected_item: 0,
     }
 }
 
@@ -173,14 +191,21 @@ pub fn fade_alpha(mode: &GameMode) -> f32 {
 }
 
 pub fn save_from_game(game: &Game) -> SaveGame {
-    let (hearts, max_hearts, rupees) = game
+    let (hearts, max_hearts, rupees, bombs, bomb_cap, selected_item) = game
         .world
         .get(game.world.player_id)
         .and_then(|p| match &p.data {
-            EntityData::Player(pd) => Some((pd.hearts, pd.max_hearts, pd.rupees)),
+            EntityData::Player(pd) => Some((
+                pd.hearts,
+                pd.max_hearts,
+                pd.rupees,
+                pd.bombs,
+                pd.bomb_cap,
+                pd.selected_item,
+            )),
             _ => None,
         })
-        .unwrap_or((6, 6, 0));
+        .unwrap_or((6, 6, 0, 0, 0, 0));
     SaveGame {
         version: crate::save_data::SAVE_VERSION,
         map: game.current_map.to_u8(),
@@ -192,6 +217,9 @@ pub fn save_from_game(game: &Game) -> SaveGame {
         gems: game.gems,
         flags: game.flags.clone(),
         fog: game.ui.minimap.fog_bits(),
+        bombs,
+        bomb_cap,
+        selected_item,
     }
 }
 

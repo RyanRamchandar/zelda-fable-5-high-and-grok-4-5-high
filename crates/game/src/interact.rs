@@ -138,6 +138,10 @@ fn interact_entity(game: &mut Game, id: crate::world::EntityId) -> Option<String
         }
         EntityKind::Npc => {
             if let Some(EntityData::Npc(n)) = game.world.get(id).map(|e| e.data.clone()) {
+                if n.npc == content::text::NpcId::Shopkeeper {
+                    crate::ui::shop::open(game);
+                    return None;
+                }
                 let text = if n.npc == content::text::NpcId::Elder
                     && has_flag(&game.flags, save_flags::QUEST_STARTED)
                 {
@@ -212,7 +216,7 @@ fn flag_is_power_chest(flag: u16) -> bool {
 }
 
 fn take_gem_entity(game: &mut Game, id: crate::world::EntityId) -> Option<String> {
-    let gid = {
+    let (gid, sealed) = {
         let e = game.world.get(id)?;
         let EntityData::Gem(g) = &e.data else {
             return None;
@@ -220,8 +224,15 @@ fn take_gem_entity(game: &mut Game, id: crate::world::EntityId) -> Option<String
         if g.taken {
             return None;
         }
-        g.id
+        (g.id, g.sealed)
     };
+    if game.current_map == content::maps::MapId::Overworld
+        && gid == 0
+        && (sealed || !has_flag(&game.flags, save_flags::PUZZLE_CHIMES_DONE))
+    {
+        game.ui.dialog.open_text(TextId::CourageGemSealed);
+        return None;
+    }
     if let Some(e) = game.world.get_mut(id) {
         if let EntityData::Gem(g) = &mut e.data {
             g.taken = true;
@@ -365,10 +376,11 @@ fn try_landmark(game: &mut Game, pcenter: Vec2) {
         return;
     }
 
-    // Hollow bomb wall (inert) grove ~ (30, 185)
-    if in_tile(tx, ty, 28, 183, 32, 187) {
+    // Hollow bomb wall grove ~ (30, 185) — hint only while closed.
+    if in_tile(tx, ty, 28, 183, 32, 187)
+        && !has_flag(&game.flags, save_flags::WALL_GROVE_OPEN)
+    {
         game.ui.dialog.open_text(TextId::HollowWall);
-        set_flag(&mut game.flags, save_flags::SECRET_GROVE_BOMB);
         return;
     }
 

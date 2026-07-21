@@ -35,11 +35,26 @@ pub fn paint(map: &mut MapDef) {
     stamp(map, 200, 150, &arch, &legend);
     stamp(map, 170, 160, &arch, &legend);
 
-    // Plate court + Wisdom Gem.
+    // Plate court + Wisdom Gem (west gates/blocks/plates painted by puzzle at load).
     map.fill_rect_layer(186, 140, 210, 160, TileLayer::Ground, T_SAND);
-    for x in (188..208).step_by(4) {
-        for y in (142..158).step_by(4) {
-            map.set(x, y, TileLayer::Detail, T_RUBBLE); // inert plates
+    // Clear push lanes.
+    for y in 144..156 {
+        for x in 188..208 {
+            map.set(x, y, TileLayer::Detail, T_VOID);
+            if map.get(x, y, TileLayer::Ground) == T_COLUMN {
+                map.set(x, y, TileLayer::Ground, T_SAND);
+            }
+        }
+    }
+    // Fence ring around pedestal; west opening is puzzle-managed T_GATE.
+    for x in 194..=202 {
+        map.set(x, 146, TileLayer::Ground, T_FENCE);
+        map.set(x, 154, TileLayer::Ground, T_FENCE);
+    }
+    for y in 147..=153 {
+        map.set(202, y, TileLayer::Ground, T_FENCE);
+        if !(149..=151).contains(&y) {
+            map.set(194, y, TileLayer::Ground, T_FENCE);
         }
     }
     map.set(198, 150, TileLayer::Ground, T_PEDESTAL);
@@ -53,7 +68,26 @@ pub fn paint(map: &mut MapDef) {
         tx: 192,
         ty: 146,
         kind: SpawnKind::Sign {
-            text: TextId::RuinsTablet,
+            text: TextId::PlateCourtSign,
+        },
+        group: 0,
+    });
+    // Phase 3 far-switch preview: crank + gated bonus chest.
+    map.set(212, 140, TileLayer::Ground, T_CRANK);
+    map.spawns.push(SpawnDef {
+        tx: 211,
+        ty: 141,
+        kind: SpawnKind::Sign {
+            text: TextId::FarSwitchSign,
+        },
+        group: 0,
+    });
+    map.spawns.push(SpawnDef {
+        tx: 210,
+        ty: 143,
+        kind: SpawnKind::Chest {
+            flag: flags::CHEST_RUINS_BONUS,
+            loot: Loot::Rupees(50),
         },
         group: 0,
     });

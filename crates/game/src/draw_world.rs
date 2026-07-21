@@ -427,7 +427,10 @@ pub fn render_entity(d: &mut Draw, e: &Entity, sprites: &SpriteMap) {
             }
         }
         EntityKind::Gem => {
-            let taken = matches!(&e.data, EntityData::Gem(g) if g.taken);
+            let (taken, sealed) = match &e.data {
+                EntityData::Gem(g) => (g.taken, g.sealed),
+                _ => (false, false),
+            };
             if taken {
                 if let Some(h) = sprites.get("prop_pedestal") {
                     d.sprite(h, 0, e.pos.x, e.pos.y, false);
@@ -437,6 +440,22 @@ pub fn render_entity(d: &mut Draw, e: &Entity, sprites: &SpriteMap) {
                 d.sprite(h, frame, e.pos.x, e.pos.y, false);
             } else {
                 d.rect(e.pos.x + 4.0, e.pos.y + 4.0, 8.0, 8.0, "#40e0ff");
+            }
+            if sealed && !taken {
+                d.circle(
+                    e.pos.x + 8.0,
+                    e.pos.y + 8.0,
+                    14.0,
+                    "rgba(160,220,255,0.28)",
+                );
+            }
+        }
+        EntityKind::Bomb => {
+            let frame = e.anim.frame as u32;
+            if let Some(h) = sprites.get("prop_bomb") {
+                d.sprite(h, frame.min(1), e.pos.x, e.pos.y, false);
+            } else {
+                d.rect(e.pos.x + 2.0, e.pos.y + 2.0, 12.0, 12.0, "#202830");
             }
         }
     }

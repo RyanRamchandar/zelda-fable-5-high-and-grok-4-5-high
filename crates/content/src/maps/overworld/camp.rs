@@ -41,7 +41,7 @@ pub fn paint(map: &mut MapDef) {
     map.set(210, 60, TileLayer::Ground, T_BONFIRE);
     map.set(200, 80, TileLayer::Ground, T_BONFIRE);
 
-    // Tents + crates (solid barricade stubs).
+    // Tents + barricade cover previews (runtime paints T_BARRICADE at load).
     map.set(180, 55, TileLayer::Ground, T_TENT);
     map.set(220, 55, TileLayer::Ground, T_TENT);
     map.set(185, 85, TileLayer::Ground, T_TENT);

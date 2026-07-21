@@ -5,4 +5,5 @@ pub mod art;
 pub mod audio;
 pub mod flags;
 pub mod maps;
+pub mod puzzles;
 pub mod text;

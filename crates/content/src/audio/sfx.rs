@@ -39,6 +39,18 @@ pub enum SfxId {
     GemGet,
     SealOpen,
     SecretChime,
+    // Phase 2C puzzles / bombs / shop
+    ChimeRing,
+    ChimeMiss,
+    PlateClick,
+    GateOpen,
+    BlockSlide,
+    BarricadeBreak,
+    CrankTurn,
+    BombFuse,
+    BombBoom,
+    BuyItem,
+    ItemCycle,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -99,6 +111,17 @@ pub fn spec(id: SfxId) -> SfxSpec {
         SfxId::GemGet => sine(440.0, 1320.0, 0.02, 0.28, 0.18),
         SfxId::SealOpen => saw(160.0, 520.0, 0.02, 0.32, 0.2),
         SfxId::SecretChime => sine(740.0, 1180.0, 0.015, 0.22, 0.14),
+        SfxId::ChimeRing => sine(880.0, 1320.0, 0.01, 0.18, 0.14),
+        SfxId::ChimeMiss => square(220.0, 110.0, 0.01, 0.14, 0.1),
+        SfxId::PlateClick => square(300.0, 220.0, 0.005, 0.06, 0.1),
+        SfxId::GateOpen => saw(180.0, 360.0, 0.01, 0.16, 0.16),
+        SfxId::BlockSlide => noise(120.0, 80.0, 0.005, 0.1, 0.12, 0.5),
+        SfxId::BarricadeBreak => noise(160.0, 50.0, 0.01, 0.14, 0.16, 0.8),
+        SfxId::CrankTurn => saw(200.0, 400.0, 0.01, 0.18, 0.14),
+        SfxId::BombFuse => noise(90.0, 140.0, 0.01, 0.08, 0.08, 0.7),
+        SfxId::BombBoom => noise(80.0, 30.0, 0.01, 0.22, 0.22, 0.9),
+        SfxId::BuyItem => sine(520.0, 880.0, 0.01, 0.12, 0.12),
+        SfxId::ItemCycle => square(440.0, 660.0, 0.005, 0.06, 0.1),
     }
 }
 

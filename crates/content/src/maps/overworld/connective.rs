@@ -6,6 +6,7 @@ use crate::maps::paint::{self, path, river, scatter, scatter_detail};
 use crate::maps::{
     EntryPoint, Loot, MapDef, RegionDef, SpawnDef, SpawnKind, TileLayer, TriggerDef, TriggerKind,
 };
+use crate::text::TextId;
 
 pub fn paint(map: &mut MapDef) {
     // Base meadow grass variance.
@@ -52,6 +53,15 @@ pub fn paint(map: &mut MapDef) {
 
     // Broken bridge grove→cliffs ~(66,94) + river island via ledge hops.
     stamp_bridge_broken(map, 64, 93);
+    map.set(67, 91, TileLayer::Ground, T_CRANK);
+    map.spawns.push(SpawnDef {
+        tx: 68,
+        ty: 95,
+        kind: SpawnKind::Sign {
+            text: TextId::CrankSign,
+        },
+        group: 0,
+    });
     map.set(62, 92, TileLayer::Ground, T_LEDGE_S);
     map.set(63, 92, TileLayer::Ground, T_LEDGE_S);
     map.fill_rect_layer(66, 96, 70, 100, TileLayer::Ground, T_GRASS_A);

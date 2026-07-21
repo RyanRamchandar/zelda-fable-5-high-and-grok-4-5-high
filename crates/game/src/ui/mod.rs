@@ -4,6 +4,7 @@ pub mod banner;
 pub mod dialog;
 pub mod hud;
 pub mod minimap;
+pub mod shop;
 pub mod viewer;
 
 use content::maps::MapId;
@@ -17,6 +18,7 @@ use crate::world::World;
 pub use banner::BannerState;
 pub use dialog::DialogState;
 pub use minimap::MinimapState;
+pub use shop::ShopState;
 pub use viewer::SpriteViewer;
 
 pub struct UiState {
@@ -28,6 +30,7 @@ pub struct UiState {
     pub banner: BannerState,
     pub dialog: DialogState,
     pub minimap: MinimapState,
+    pub shop: ShopState,
 }
 
 impl UiState {
@@ -41,6 +44,7 @@ impl UiState {
             banner: BannerState::new(),
             dialog: DialogState::new(),
             minimap: MinimapState::new(),
+            shop: ShopState::new(),
         }
     }
 }
@@ -123,9 +127,9 @@ fn return_house_label(n: u8) -> &'static str {
 }
 
 fn return_cave_label(n: u8) -> &'static str {
-    if n == 0 {
-        "Cave0"
-    } else {
-        "Cave1"
+    match n {
+        0 => "Cave0",
+        1 => "Cave1",
+        _ => "Cave2",
     }
 }

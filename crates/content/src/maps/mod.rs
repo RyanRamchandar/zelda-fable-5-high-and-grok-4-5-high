@@ -45,7 +45,7 @@ impl MapId {
             MapId::Shop => 2,
             MapId::ShrineLobby => 3,
             MapId::House(n) => 10 + n.min(5),
-            MapId::Cave(n) => 20 + n.min(1),
+            MapId::Cave(n) => 20 + n.min(2),
         }
     }
 
@@ -56,7 +56,7 @@ impl MapId {
             2 => MapId::Shop,
             3 => MapId::ShrineLobby,
             10..=15 => MapId::House(v - 10),
-            20..=21 => MapId::Cave(v - 20),
+            20..=22 => MapId::Cave(v - 20),
             _ => MapId::Overworld,
         }
     }
@@ -198,6 +198,18 @@ impl MapDef {
         self.set_ex(x, y, layer, tile, None);
     }
 
+    pub fn get(&self, x: u32, y: u32, layer: TileLayer) -> u16 {
+        if x >= self.width || y >= self.height {
+            return 0;
+        }
+        let i = self.idx(x, y);
+        match layer {
+            TileLayer::Ground => self.ground[i],
+            TileLayer::Detail => self.detail[i],
+            TileLayer::Overhang => self.overhang[i],
+        }
+    }
+
     /// Paint a tile; collision comes from catalog unless `flags_override` is set.
     /// Ground paints also refresh collision from the tile (or override).
     pub fn set_ex(
@@ -292,7 +304,8 @@ pub fn build(id: MapId) -> MapDef {
         MapId::House(n) => interiors::house_for(n),
         MapId::Shop => interiors::shop(),
         MapId::Cave(0) => interiors::cave_grotto(),
-        MapId::Cave(_) => interiors::cave_heart(),
+        MapId::Cave(1) => interiors::cave_heart(),
+        MapId::Cave(_) => interiors::cave_bomb(),
         MapId::ShrineLobby => interiors::shrine_lobby(),
     }
 }

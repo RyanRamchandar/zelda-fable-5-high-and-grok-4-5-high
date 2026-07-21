@@ -106,7 +106,18 @@ pub fn draw(d: &mut Draw, world: &World, sprites: &SpriteMap) {
     } else {
         d.rect(ITEM_X, ITEM_Y, ITEM_S, ITEM_S, "#303030");
     }
-    d.text("—", ITEM_X + 6.0, ITEM_Y + 14.0, "#808080");
+    if pd.bomb_cap > 0 {
+        let flash = pd.item_cycle_flash > 0;
+        if let Some(h) = sprites.get("prop_bomb") {
+            d.sprite(h, 0, ITEM_X, ITEM_Y, false);
+        } else {
+            d.rect(ITEM_X + 4.0, ITEM_Y + 4.0, 12.0, 12.0, "#303848");
+        }
+        let col = if flash { "#40ffff" } else { "#e8e8e8" };
+        d.text(&format!("{}", pd.bombs), ITEM_X + 12.0, ITEM_Y + 18.0, col);
+    } else {
+        d.text("—", ITEM_X + 6.0, ITEM_Y + 14.0, "#808080");
+    }
 
     d.text(&format!("₹{}", pd.rupees), 8.0, 26.0, "#40e080");
 }

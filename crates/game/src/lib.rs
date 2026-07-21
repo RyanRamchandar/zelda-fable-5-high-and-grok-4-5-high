@@ -2,6 +2,7 @@
 
 mod assets;
 mod combat;
+mod debug;
 mod draw_world;
 mod enemies;
 mod fx;
@@ -9,6 +10,7 @@ mod interact;
 mod items;
 mod math;
 mod player;
+mod puzzle;
 mod save_data;
 mod state;
 mod ui;
@@ -18,7 +20,7 @@ pub use assets::{bake as bake_assets, BakedAssets, SpriteMap};
 pub use content::audio::sfx::SfxId;
 pub use save_data::{SaveGame, SAVE_KEY};
 
-use content::maps::{self, MapId, TriggerKind, TILE_PX};
+use content::maps::{self, MapId, TILE_PX};
 use engine::chunks::ChunkCache;
 use engine::input::{InputState, DEBUG_ACTION, DEBUG_MAP, DEBUG_OVERLAY, DEBUG_TELEPORT};
 use engine::render::Draw;
@@ -28,11 +30,10 @@ use crate::draw_world::{MapRenderStats, TileSprites};
 use crate::enemies::WaveDirector;
 use crate::fx::{FxKind, FxState};
 use crate::math::{Dir4, Vec2};
+use crate::puzzle::PuzzleState;
 use crate::state::{fade_alpha, save_from_game, GameMode};
 use crate::ui::UiState;
-use crate::world::entity::{
-    layer, AnimState, BeamData, Body, Entity, EntityData, EntityKind, PlayerState,
-};
+use crate::world::entity::{EntityData, EntityKind};
 use crate::world::physics;
 use crate::world::{Spawner, World, WorldEvent};
 
@@ -64,7 +65,8 @@ pub struct Game {
     map_stats: MapRenderStats,
     teleport_idx: usize,
     pub(crate) door_cooldown: u8,
-    pending_save: Option<String>,
+    pub(crate) pending_save: Option<String>,
+    pub(crate) puzzle: PuzzleState,
 }
 
 impl Game {
@@ -91,6 +93,9 @@ impl Game {
                 pd.hearts = save.hearts;
                 pd.max_hearts = save.max_hearts;
                 pd.rupees = save.rupees;
+                pd.bombs = save.bombs;
+                pd.bomb_cap = save.bomb_cap;
+                pd.selected_item = save.selected_item;
             }
             if let Some(h) = p.health.as_mut() {
                 h.hp = save.hearts;
@@ -99,8 +104,11 @@ impl Game {
         }
         let mut spawner = Spawner::populate(&mut world);
         spawner.apply_save(&mut world, save.gems, &save.flags);
+        puzzle::paint_closed(&mut world, map_id, &save.flags);
         state::restore_shrine_door(&mut world, &save.flags);
-        debug_assert_door_entries(&world);
+        puzzle::restore(&mut world, &save.flags);
+        puzzle::chimes::apply_courage_seal_from_flags(&mut world, &save.flags);
+        debug::debug_assert_door_entries(&world);
 
         let chunk_cache = ChunkCache::new(48).ok();
         let mut ui = UiState::new();
@@ -134,6 +142,7 @@ impl Game {
             teleport_idx: 0,
             door_cooldown: 0,
             pending_save: None,
+            puzzle: PuzzleState::for_map(map_id),
         }
     }
 
@@ -176,7 +185,7 @@ impl Game {
             return self.drain_events(input);
         }
 
-        // Dialog / pause-map pause world sim (viewer pattern).
+        // Dialog / pause-map / shop pause world sim (viewer pattern).
         self.ui.minimap.update(
             input,
             &self.world,
@@ -184,9 +193,14 @@ impl Game {
             self.gems,
             &self.flags,
         );
-        if self.ui.dialog.open || self.ui.minimap.pause_open {
+        if self.ui.dialog.open || self.ui.minimap.pause_open || self.ui.shop.open {
             if self.ui.dialog.open {
                 self.ui.dialog.update(input, &mut self.world);
+            }
+            if self.ui.shop.open {
+                if let Some(json) = ui::shop::update(self, input) {
+                    self.pending_save = Some(json);
+                }
             }
             return self.drain_events(input);
         }
@@ -205,14 +219,26 @@ impl Game {
         }
 
         if self.ui.debug_overlay && input.debug[DEBUG_ACTION].pressed {
-            spawn_debug_shot(&mut self.world);
+            debug::spawn_debug_shot(&mut self.world);
+            // Temporary bomb grant for M3 testing (behind F1).
+            if let Some(p) = self.world.get_mut(self.world.player_id) {
+                if let EntityData::Player(pd) = &mut p.data {
+                    if pd.bomb_cap == 0 {
+                        pd.bomb_cap = 10;
+                        pd.bombs = 10;
+                        pd.selected_item = 1;
+                    } else {
+                        pd.bombs = pd.bombs.saturating_add(5).min(pd.bomb_cap);
+                    }
+                }
+            }
         }
 
         player::update(&mut self.world, input);
         if let Some(json) = interact::update(self, input) {
             self.pending_save = Some(json);
         }
-        if self.ui.dialog.open {
+        if self.ui.dialog.open || self.ui.shop.open {
             return self.drain_events(input);
         }
         self.spawner.update(&mut self.world);
@@ -222,8 +248,9 @@ impl Game {
             enemies::update_no_waves(&mut self.world, input);
         }
         integrate_non_player(&mut self.world);
+        puzzle::update(self);
         combat::resolve_hits(&mut self.world);
-        items::update(&mut self.world);
+        items::update(self);
         fx::update(&mut self.world, &mut self.fx);
         self.ui.banner.update();
         if let Some(json) = state::check_triggers(self) {
@@ -416,6 +443,7 @@ impl Game {
             &self.flags,
         );
         self.ui.dialog.render(d, &self.sprites);
+        ui::shop::render(d, &self.ui.shop, &self.flags);
         self.ui.minimap.render_pause(
             d,
             &self.world,
@@ -432,7 +460,7 @@ impl Game {
             let _ = a;
         }
 
-        let state_str = player_state_label(&self.world);
+        let state_str = debug::player_state_label(&self.world);
         ui::render_debug(
             d,
             &self.world,
@@ -513,7 +541,8 @@ fn integrate_non_player(world: &mut World) {
             | EntityKind::Sign
             | EntityKind::Npc
             | EntityKind::Chest
-            | EntityKind::Gem => {}
+            | EntityKind::Gem
+            | EntityKind::Bomb => {}
             EntityKind::Pickup
             | EntityKind::SwordBeam
             | EntityKind::DebugShot
@@ -523,79 +552,5 @@ fn integrate_non_player(world: &mut World) {
             }
         }
         world.arena[slot].entity = Some(entity);
-    }
-}
-
-fn spawn_debug_shot(world: &mut World) {
-    let (center, facing) = match world.get(world.player_id) {
-        Some(p) => (p.center(), p.facing),
-        None => return,
-    };
-    let dir = facing.unit();
-    let spawn = center.add(dir.scale(60.0)).sub(Vec2::new(3.0, 3.0));
-    let vel = dir.scale(-crate::combat::tuning::DEBUG_SHOT_SPEED);
-    world.spawn(Entity {
-        kind: EntityKind::DebugShot,
-        pos: spawn,
-        vel,
-        facing: Dir4::from_vec(vel, facing),
-        body: Some(Body {
-            half: Vec2::new(3.0, 3.0),
-            solid: false,
-            layer: layer::ENEMY_HIT,
-            mask: layer::PLAYER_BODY,
-        }),
-        health: None,
-        knockback: Vec2::ZERO,
-        anim: AnimState::default(),
-        data: EntityData::Beam(BeamData {
-            dir: vel.normalize_or_zero(),
-            traveled: 0.0,
-            damage: crate::combat::tuning::DEBUG_SHOT_DAMAGE,
-            knockback: 2.0,
-            from_player: false,
-            swing_id: 0xDEAD,
-            hit: false,
-        }),
-        alive: true,
-    });
-}
-
-fn player_state_label(world: &World) -> String {
-    let Some(p) = world.get(world.player_id) else {
-        return "?".into();
-    };
-    match &p.data {
-        EntityData::Player(pd) => match pd.state {
-            PlayerState::Idle => "idle".into(),
-            PlayerState::Swing { stage, tick } => format!("swing{stage}:{tick}"),
-            PlayerState::Charging { tick } => format!("charge:{tick}"),
-            PlayerState::Spin { tick } => format!("spin:{tick}"),
-            PlayerState::Dash { tick } => format!("dash:{tick}"),
-            PlayerState::DashRecovery { tick } => format!("drec:{tick}"),
-            PlayerState::LedgeHop { tick, .. } => format!("ledge:{tick}"),
-        },
-        _ => "?".into(),
-    }
-}
-
-fn debug_assert_door_entries(world: &World) {
-    for tr in &world.map.triggers {
-        let TriggerKind::Door { target, entry } = tr.kind else {
-            continue;
-        };
-        let dest = maps::build(target);
-        let Some((tx, ty)) = dest.entry_pos(entry) else {
-            continue;
-        };
-        for dtr in &dest.triggers {
-            if let TriggerKind::Door { .. } = dtr.kind {
-                let inside = tx >= dtr.tx
-                    && ty >= dtr.ty
-                    && tx < dtr.tx + dtr.w
-                    && ty < dtr.ty + dtr.h;
-                debug_assert!(!inside, "door re-entry: {target:?} entry {entry}");
-            }
-        }
     }
 }

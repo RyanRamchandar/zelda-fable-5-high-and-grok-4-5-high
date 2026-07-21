@@ -122,3 +122,12 @@ pub const SPAWN_TELEGRAPH: u16 = 45;
 pub const WAVE_LULL: u16 = 120;
 pub const WAVE_ALIVE_CAP: usize = 10;
 pub const ENEMY_IFRAMES: u16 = 10;
+
+pub const BARRICADE_HP: i32 = 3;
+pub const BOMB_FUSE_TICKS: u16 = 90;
+pub const BOMB_BLAST_RADIUS: f32 = 24.0;
+pub const BOMB_TILE_RADIUS: f32 = 28.0;
+pub const BOMB_DAMAGE: f32 = 2.0;
+pub const BOMB_PLAYER_DAMAGE: i32 = 2;
+pub const BOMB_KNOCKBACK: f32 = 3.0;
+pub const ITEM_TAP_MAX_TICKS: u16 = 8;

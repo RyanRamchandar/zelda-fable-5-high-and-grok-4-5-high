@@ -117,7 +117,8 @@ pub fn resolve_hits(world: &mut World) {
                 | EntityKind::Sign
                 | EntityKind::Npc
                 | EntityKind::Chest
-                | EntityKind::Gem => None,
+                | EntityKind::Gem
+                | EntityKind::Bomb => None,
             }
         };
         let Some((kind, from_player, center, dir, damage, knockback, swing_id, hit, _is_beam)) =

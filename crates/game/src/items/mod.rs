@@ -1,5 +1,11 @@
 //! Items and pickups.
 
+pub mod bombs;
 pub mod pickups;
 
-pub use pickups::update;
+use crate::Game;
+
+pub fn update(game: &mut Game) {
+    pickups::update(&mut game.world);
+    bombs::update(game);
+}

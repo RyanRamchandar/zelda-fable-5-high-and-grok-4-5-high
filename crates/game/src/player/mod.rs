@@ -2,12 +2,13 @@
 
 mod sword;
 
-use engine::input::{InputState, BUTTON_DASH, BUTTON_ITEM};
+use engine::input::{InputState, BUTTON_CYCLE, BUTTON_DASH, BUTTON_ITEM};
 
 use crate::combat::energy;
 use crate::combat::style::{self, StyleVerb};
 use crate::combat::tuning;
 use crate::fx::FxKind;
+use crate::items::bombs;
 use crate::math::{Dir4, Vec2};
 use crate::world::entity::{EntityData, EntityId, EntityKind, PlayerState};
 use crate::world::physics;
@@ -19,6 +20,7 @@ use sword::{update_beams, update_sword};
 pub fn update(world: &mut World, input: &InputState) {
     let pid = world.player_id;
     update_shield_and_dash_intent(world, pid, input);
+    update_item_cycle(world, pid, input);
     update_movement(world, pid, input);
     let (facing, center) = {
         let Some(p) = world.get(pid) else {
@@ -33,6 +35,23 @@ pub fn update(world: &mut World, input: &InputState) {
     check_fountain(world, pid);
 }
 
+fn update_item_cycle(world: &mut World, pid: EntityId, input: &InputState) {
+    if !input.buttons[BUTTON_CYCLE].pressed {
+        return;
+    }
+    let mut sfx = SfxId::Refused;
+    if let Some(p) = world.get_mut(pid) {
+        if let EntityData::Player(pd) = &mut p.data {
+            if pd.bomb_cap > 0 {
+                pd.selected_item = 1;
+                pd.item_cycle_flash = 12;
+                sfx = SfxId::ItemCycle;
+            }
+        }
+    }
+    world.push_event(WorldEvent::Sfx(sfx));
+}
+
 fn update_shield_and_dash_intent(world: &mut World, pid: EntityId, input: &InputState) {
     let item = input.buttons[BUTTON_ITEM].held;
     let dash_pressed = input.buttons[BUTTON_DASH].pressed;
@@ -40,6 +59,7 @@ fn update_shield_and_dash_intent(world: &mut World, pid: EntityId, input: &Input
     let mut denied = false;
     let mut dust = None;
     let mut sfx_dash = false;
+    let mut place_bomb = false;
 
     {
         let Some(p) = world.get_mut(pid) else {
@@ -51,17 +71,29 @@ fn update_shield_and_dash_intent(world: &mut World, pid: EntityId, input: &Input
             return;
         };
 
-        // Shield (Item button this phase)
+        // Shield (hold Item) + tap-release B-item (≤8 ticks).
         let can_shield = matches!(
             pd.state,
             PlayerState::Idle | PlayerState::DashRecovery { .. }
         );
+        if !item
+            && pd.shield_ticks >= 1
+            && pd.shield_ticks <= tuning::ITEM_TAP_MAX_TICKS
+            && pd.selected_item == 1
+            && pd.bombs > 0
+            && can_shield
+        {
+            place_bomb = true;
+        }
         if item && can_shield {
             pd.shield_held = true;
             pd.shield_ticks = pd.shield_ticks.saturating_add(1);
         } else if !item {
             pd.shield_held = false;
             pd.shield_ticks = 0;
+        }
+        if pd.item_cycle_flash > 0 {
+            pd.item_cycle_flash -= 1;
         }
 
         // Dash
@@ -88,6 +120,9 @@ fn update_shield_and_dash_intent(world: &mut World, pid: EntityId, input: &Input
         }
     }
 
+    if place_bomb {
+        let _ = bombs::try_place(world);
+    }
     if denied {
         world.push_event(WorldEvent::EnergyDenied);
         world.push_event(WorldEvent::Sfx(SfxId::Refused));

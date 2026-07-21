@@ -2,7 +2,8 @@ use wasm_bindgen::JsCast;
 use web_sys::Window;
 
 use super::{
-    SharedInput, BUTTON_ATTACK, BUTTON_DASH, BUTTON_INTERACT, BUTTON_ITEM, BUTTON_PAUSE,
+    SharedInput, BUTTON_ATTACK, BUTTON_CYCLE, BUTTON_DASH, BUTTON_INTERACT, BUTTON_ITEM,
+    BUTTON_PAUSE,
 };
 
 const DEADZONE: f32 = 0.25;
@@ -68,6 +69,10 @@ pub fn poll(window: &Window, state: &mut SharedInput) {
         }
         if button_pressed(&buttons, 9) {
             pad_buttons[BUTTON_PAUSE] = true;
+        }
+        // LB/RB cycle B-item (touch parity deferred to Phase 4).
+        if button_pressed(&buttons, 4) || button_pressed(&buttons, 5) {
+            pad_buttons[BUTTON_CYCLE] = true;
         }
     }
 

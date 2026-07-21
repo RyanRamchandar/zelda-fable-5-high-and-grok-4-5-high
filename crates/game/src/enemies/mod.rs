@@ -48,7 +48,8 @@ fn update_enemies(world: &mut World, _input: &InputState) {
             | EntityKind::Sign
             | EntityKind::Npc
             | EntityKind::Chest
-            | EntityKind::Gem => {}
+            | EntityKind::Gem
+            | EntityKind::Bomb => {}
         }
     }
     octorok::update_rocks(world);

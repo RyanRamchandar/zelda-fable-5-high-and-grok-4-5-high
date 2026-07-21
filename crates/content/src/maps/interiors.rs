@@ -136,6 +136,23 @@ pub fn cave_heart() -> MapDef {
     map
 }
 
+pub fn cave_bomb() -> MapDef {
+    let mut map = room(12, 10, 32);
+    map.set(3, 3, TileLayer::Detail, T_RUBBLE);
+    map.set(8, 4, TileLayer::Detail, T_RUBBLE);
+    map.set(5, 6, TileLayer::Detail, T_RUBBLE);
+    map.spawns.push(SpawnDef {
+        tx: 6,
+        ty: 4,
+        kind: SpawnKind::Chest {
+            flag: flags::CHEST_GROVE_BOMB,
+            loot: Loot::Rupees(100),
+        },
+        group: 0,
+    });
+    map
+}
+
 pub fn shrine_lobby() -> MapDef {
     let mut map = room(16, 12, 6);
     // Return to overworld shrine entry 6.
