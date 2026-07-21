@@ -62,6 +62,20 @@ pub(crate) fn do_rock_fan(game: &mut Game, warden: EntityId, count: u8) {
 
 pub(crate) fn spawn_rock(world: &mut World, pos: Vec2, dir: Vec2) {
     use crate::world::entity::RockData;
+    // Phase 5: cap live rocks so P3 fans don't pile up.
+    let live = world
+        .alive_ids()
+        .into_iter()
+        .filter(|&id| {
+            world
+                .get(id)
+                .map(|e| e.kind == EntityKind::OctorokRock)
+                .unwrap_or(false)
+        })
+        .count();
+    if live >= 10 {
+        return;
+    }
     world.spawn(Entity {
         kind: EntityKind::OctorokRock,
         pos: Vec2::new(pos.x - 4.0, pos.y - 4.0),

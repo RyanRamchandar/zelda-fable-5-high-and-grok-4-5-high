@@ -242,9 +242,12 @@ fn draw_visible_direct(
 
 fn draw_animated(d: &mut Draw, world: &World, tiles: &TileSprites, cam: crate::math::Vec2) {
     let mut count = 0u32;
-    let coarsen = world.animated_tiles.len() > 180;
+    // Phase 5: coarsen earlier (120) and hard-cap on-screen overdraw (140).
+    let n = world.animated_tiles.len();
+    let coarsen = n > 120;
+    let stride = if n > 220 { 3 } else if coarsen { 2 } else { 1 };
     for (i, &(tx, ty, id)) in world.animated_tiles.iter().enumerate() {
-        if coarsen && i % 2 == 1 {
+        if stride > 1 && !i.is_multiple_of(stride) {
             continue;
         }
         let px = tx as f32 * TILE_PX;
@@ -261,7 +264,7 @@ fn draw_animated(d: &mut Draw, world: &World, tiles: &TileSprites, cam: crate::m
         };
         blit_tile(d, tiles, id, px, py, frame);
         count += 1;
-        if count > 200 {
+        if count > 140 {
             break;
         }
     }

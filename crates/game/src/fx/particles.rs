@@ -2,7 +2,8 @@ use engine::render::Draw;
 
 use crate::math::Vec2;
 
-const CAP: usize = 256;
+// Phase 5: tightened for camp/Warden particle spikes (was 256).
+const CAP: usize = 180;
 
 #[derive(Clone, Copy, Debug)]
 pub enum ParticleKind {

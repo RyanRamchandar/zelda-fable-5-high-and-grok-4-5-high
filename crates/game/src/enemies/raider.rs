@@ -449,6 +449,19 @@ pub fn update_projectiles(world: &mut World) {
 }
 
 fn spawn_torch_proj(world: &mut World, pos: Vec2, dir: Vec2) {
+    let live = world
+        .alive_ids()
+        .into_iter()
+        .filter(|&id| {
+            world
+                .get(id)
+                .map(|e| matches!(e.kind, EntityKind::TorchProj | EntityKind::TorchFlame))
+                .unwrap_or(false)
+        })
+        .count();
+    if live >= 8 {
+        return;
+    }
     world.spawn(Entity {
         kind: EntityKind::TorchProj,
         pos: Vec2::new(pos.x - 4.0, pos.y - 4.0),

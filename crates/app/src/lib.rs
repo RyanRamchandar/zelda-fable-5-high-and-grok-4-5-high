@@ -20,7 +20,11 @@ extern "C" {
 
 #[wasm_bindgen(start)]
 pub fn start() {
-    log("shard: build phase5 (Gate C)");
+    log(&format!(
+        "shard: phase5 Gate C v{} commit={}",
+        env!("CARGO_PKG_VERSION"),
+        option_env!("GIT_COMMIT").unwrap_or("local")
+    ));
 
     let platform = match Platform::create() {
         Ok(p) => p,
