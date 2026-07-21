@@ -1,5 +1,11 @@
+mod music;
+
+pub use music::{MusicTrackParams, Note};
+
 use wasm_bindgen::JsValue;
 use web_sys::{AudioContext, AudioContextState, OscillatorType};
+
+use music::MusicEngine;
 
 #[derive(Clone, Copy, Debug)]
 pub enum OscKind {
@@ -26,6 +32,7 @@ pub struct Audio {
     unlocked: bool,
     muted: bool,
     noise_buffer: Option<web_sys::AudioBuffer>,
+    music: MusicEngine,
 }
 
 impl Audio {
@@ -35,11 +42,13 @@ impl Audio {
             unlocked: false,
             muted: false,
             noise_buffer: None,
+            music: MusicEngine::new(),
         }
     }
 
     pub fn set_muted(&mut self, muted: bool) {
         self.muted = muted;
+        self.music.set_muted(muted);
     }
 
     pub fn muted(&self) -> bool {

@@ -13,6 +13,7 @@ mod fx;
 mod interact;
 mod items;
 mod math;
+mod music_director;
 mod player;
 mod puzzle;
 mod rooms;
@@ -22,6 +23,7 @@ mod ui;
 mod world;
 
 pub use assets::{bake as bake_assets, BakedAssets, SpriteMap};
+pub use content::audio::music::TrackId;
 pub use content::audio::sfx::SfxId;
 pub use save_data::{SaveGame, SAVE_KEY};
 
@@ -46,6 +48,7 @@ pub enum GameEvent {
     Sfx(SfxId),
     Save(String),
     SetMuted(bool),
+    SetMusic(TrackId),
 }
 
 #[derive(Clone, Debug, Default)]
@@ -84,6 +87,9 @@ pub struct Game {
     pub(crate) open_title_after_transition: bool,
     muted_boot_sent: bool,
     pub(crate) last_input: InputState,
+    /// Overworld region index for Village vs Overworld music (interiors inherit).
+    pub(crate) music_region: u8,
+    pub(crate) music_playing: Option<TrackId>,
 }
 
 impl Game {
@@ -176,6 +182,8 @@ impl Game {
             open_title_after_transition: false,
             muted_boot_sent: false,
             last_input: InputState::default(),
+            music_region: 1, // boot near village
+            music_playing: None,
         };
         if map_id == MapId::Dungeon {
             rooms::on_enter_dungeon(&mut game);

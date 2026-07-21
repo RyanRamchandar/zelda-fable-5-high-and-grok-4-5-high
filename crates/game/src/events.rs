@@ -64,6 +64,9 @@ pub(crate) fn drain(game: &mut Game, _input: &InputState) -> Vec<GameEvent> {
             }
             WorldEvent::AttackHit { .. } | WorldEvent::DamagedPlayer { .. } => {}
             WorldEvent::RegionEntered(region) => {
+                if game.current_map == content::maps::MapId::Overworld {
+                    game.music_region = region;
+                }
                 if let Some(r) = game.world.map.regions.get(region as usize) {
                     game.ui.banner.on_region(region, r.name, game.world.tick);
                 }
@@ -84,6 +87,8 @@ pub(crate) fn drain(game: &mut Game, _input: &InputState) -> Vec<GameEvent> {
         outbound.push(GameEvent::SetMuted(game.settings.muted));
         game.muted_boot_sent = true;
     }
+
+    crate::music_director::sync(game, &mut outbound);
 
     game.ticks = game.ticks.wrapping_add(1);
     game.ui.fps_accum = game.ui.fps_accum.wrapping_add(1);

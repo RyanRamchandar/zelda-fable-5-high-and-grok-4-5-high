@@ -1,10 +1,11 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use content::audio::music::{self as content_music, TrackId};
 use content::audio::sfx::{self, OscKind as ContentOsc};
 use wasm_bindgen::prelude::*;
 
-use engine::audio::{OscKind, SfxParams};
+use engine::audio::{MusicTrackParams, Note, OscKind, SfxParams};
 use engine::Platform;
 use game::{Game, GameEvent, SAVE_KEY};
 
@@ -12,10 +13,15 @@ use game::{Game, GameEvent, SAVE_KEY};
 extern "C" {
     #[wasm_bindgen(js_namespace = console)]
     fn error(s: &str);
+
+    #[wasm_bindgen(js_namespace = console)]
+    fn log(s: &str);
 }
 
 #[wasm_bindgen(start)]
 pub fn start() {
+    log("shard: build phase5 (Gate C)");
+
     let platform = match Platform::create() {
         Ok(p) => p,
         Err(e) => {
@@ -81,12 +87,16 @@ pub fn start() {
                         GameEvent::SetMuted(b) => {
                             p.audio.set_muted(b);
                         }
+                        GameEvent::SetMusic(id) => {
+                            p.audio.set_music(Some(adapt_track(id)));
+                        }
                     }
                 }
             }
             g.render(&mut p.draw);
         }
 
+        p.audio.tick_music();
         p.input.end_frame();
     });
 }
@@ -104,7 +114,34 @@ fn adapt_sfx(spec: &sfx::SfxSpec) -> SfxParams {
         freq_end: spec.freq_end,
         attack_s: spec.attack_s,
         decay_s: spec.decay_s,
-        gain: spec.gain,
+        // Slight lift so cues cut through music bus (~0.35).
+        gain: (spec.gain * 1.15).min(0.55),
         noise_mix: spec.noise_mix,
     }
+}
+
+fn adapt_track(id: TrackId) -> MusicTrackParams {
+    let t = content_music::track(id);
+    MusicTrackParams {
+        bpm: t.bpm,
+        loop_len: t.loop_len,
+        channels: [
+            adapt_notes(t.channels[0]),
+            adapt_notes(t.channels[1]),
+            adapt_notes(t.channels[2]),
+            adapt_notes(t.channels[3]),
+        ],
+    }
+}
+
+fn adapt_notes(notes: &[content_music::Note]) -> Vec<Note> {
+    notes
+        .iter()
+        .map(|n| Note {
+            start: n.start,
+            len: n.len,
+            midi: n.midi,
+            vol: n.vol,
+        })
+        .collect()
 }
