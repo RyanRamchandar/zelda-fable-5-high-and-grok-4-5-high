@@ -70,6 +70,16 @@ pub fn update(game: &mut Game, input: &InputState) -> Option<String> {
         return None;
     }
 
+    if let Some(tap) = input.menu_tap {
+        if let Some(idx) = crate::ui::touch::hit_rows(tap, 88.0, 28.0, STOCK_LEN, 50.0, 420.0) {
+            if idx != game.ui.shop.cursor {
+                game.ui.shop.cursor = idx;
+                return None;
+            }
+            return try_buy(game, idx);
+        }
+    }
+
     if input.buttons[BUTTON_ATTACK].pressed || input.buttons[BUTTON_INTERACT].pressed {
         return try_buy(game, game.ui.shop.cursor);
     }

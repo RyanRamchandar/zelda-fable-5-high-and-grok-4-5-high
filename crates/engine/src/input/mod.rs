@@ -8,7 +8,7 @@ use std::rc::Rc;
 use wasm_bindgen::closure::Closure;
 use web_sys::{HtmlCanvasElement, Window};
 
-pub use touch::{TouchOverlay, JOYSTICK_MAX_RADIUS};
+pub use touch::{TouchButtonGeom, TouchOverlay, JOYSTICK_MAX_RADIUS};
 
 pub const BUTTON_ATTACK: usize = 0;
 pub const BUTTON_ITEM: usize = 1;
@@ -41,6 +41,10 @@ pub struct InputState {
     pub touch_overlay: TouchOverlay,
     /// Edge pulse for KeyM (corner minimap toggle). Phase 2B.
     pub minimap_toggle: bool,
+    /// Right-half touchstart that claimed no button (menus / dialog).
+    pub menu_tap: Option<(f32, f32)>,
+    /// True when window is taller than wide (portrait).
+    pub viewport_portrait: bool,
 }
 
 impl Default for InputState {
@@ -52,6 +56,8 @@ impl Default for InputState {
             touch_active: false,
             touch_overlay: TouchOverlay::default(),
             minimap_toggle: false,
+            menu_tap: None,
+            viewport_portrait: false,
         }
     }
 }
@@ -75,6 +81,7 @@ pub(crate) struct SharedInput {
     /// Latched on keydown so brief F1/F2/H taps still register as pressed.
     pub debug_pulse: [bool; DEBUG_COUNT],
     pub minimap_pulse: bool,
+    pub viewport_portrait: bool,
     pub touch: touch::TouchState,
 }
 
@@ -92,6 +99,7 @@ impl SharedInput {
             prev_debug: [false; DEBUG_COUNT],
             debug_pulse: [false; DEBUG_COUNT],
             minimap_pulse: false,
+            viewport_portrait: false,
             touch: touch::TouchState::new(),
         }
     }
@@ -142,7 +150,7 @@ impl Input {
     }
 
     pub fn snapshot(&mut self) -> InputState {
-        let s = self.shared.borrow_mut();
+        let mut s = self.shared.borrow_mut();
         let held = s.held();
         let mut buttons = [Button::default(); BUTTON_COUNT];
         for i in 0..BUTTON_COUNT {
@@ -163,6 +171,9 @@ impl Input {
             };
         }
         let minimap_toggle = s.minimap_pulse;
+        // Take (don't wait for end_frame) so mid-frame touchend taps aren't lost.
+        let menu_tap = s.touch.menu_tap_pulse.take();
+        let viewport_portrait = s.viewport_portrait;
         InputState {
             move_vec: s.merged_move(),
             buttons,
@@ -170,7 +181,13 @@ impl Input {
             touch_active: s.touch.touch_active,
             touch_overlay: s.touch.overlay_geometry(),
             minimap_toggle,
+            menu_tap,
+            viewport_portrait,
         }
+    }
+
+    pub fn set_viewport_portrait(&mut self, portrait: bool) {
+        self.shared.borrow_mut().viewport_portrait = portrait;
     }
 
     pub fn end_frame(&mut self) {

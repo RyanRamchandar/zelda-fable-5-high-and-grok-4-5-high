@@ -110,11 +110,33 @@ pub fn update(game: &mut Game, input: &InputState) -> bool {
             game.ui.pause.cursor = (game.ui.pause.cursor + 1).min(3);
             blip_move(game);
         }
-        if input.buttons[BUTTON_ATTACK].pressed
+        if let Some(tap) = input.menu_tap {
+            if let Some(idx) = crate::ui::touch::hit_rows(tap, 80.0, 28.0, 4, 120.0, 400.0) {
+                if idx != game.ui.pause.cursor {
+                    game.ui.pause.cursor = idx;
+                    blip_move(game);
+                } else {
+                    activate_option(game, idx);
+                }
+            }
+        } else if input.buttons[BUTTON_ATTACK].pressed
             || input.buttons[BUTTON_CONFIRM].pressed
             || input.buttons[BUTTON_INTERACT].pressed
         {
             activate_option(game, game.ui.pause.cursor);
+        }
+    } else if let Some(tap) = input.menu_tap {
+        // Tab bar taps: Map / Help / Options
+        for (i, page) in [PausePage::Map, PausePage::Help, PausePage::Options]
+            .into_iter()
+            .enumerate()
+        {
+            let x0 = 40.0 + i as f32 * 100.0;
+            if tap.1 <= 22.0 && tap.0 >= x0 && tap.0 <= x0 + 80.0 {
+                game.ui.pause.page = page;
+                game.ui.pause.cursor = 0;
+                blip_move(game);
+            }
         }
     }
 

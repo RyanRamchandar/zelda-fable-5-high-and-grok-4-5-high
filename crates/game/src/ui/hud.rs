@@ -25,7 +25,7 @@ pub const ITEM_X: f32 = 450.0;
 pub const ITEM_Y: f32 = 240.0;
 pub const ITEM_S: f32 = 20.0;
 
-pub fn draw(d: &mut Draw, world: &World, sprites: &SpriteMap) {
+pub fn draw(d: &mut Draw, world: &World, sprites: &SpriteMap, hide_item_slot: bool) {
     let Some(p) = world.get(world.player_id) else {
         return;
     };
@@ -101,34 +101,36 @@ pub fn draw(d: &mut Draw, world: &World, sprites: &SpriteMap) {
     let scol = if pulse { "#ffff80" } else { "#f0f0f0" };
     d.text(letter, STYLE_X + 3.0, STYLE_Y + 10.0, scol);
 
-    if let Some(slot) = sprites.get("item_slot") {
-        d.sprite(slot, 0, ITEM_X - 1.0, ITEM_Y - 1.0, false);
-    } else {
-        d.rect(ITEM_X, ITEM_Y, ITEM_S, ITEM_S, "#303030");
-    }
-    let flash = pd.item_cycle_flash > 0;
-    match pd.selected_item {
-        2 => {
-            if let Some(h) = sprites.get("boomerang") {
-                d.sprite(h, 0, ITEM_X, ITEM_Y, false);
-            } else {
-                d.rect(ITEM_X + 4.0, ITEM_Y + 4.0, 12.0, 12.0, "#40e0c0");
-            }
-            if flash {
-                d.text("B", ITEM_X + 14.0, ITEM_Y + 18.0, "#40ffff");
-            }
+    if !hide_item_slot {
+        if let Some(slot) = sprites.get("item_slot") {
+            d.sprite(slot, 0, ITEM_X - 1.0, ITEM_Y - 1.0, false);
+        } else {
+            d.rect(ITEM_X, ITEM_Y, ITEM_S, ITEM_S, "#303030");
         }
-        1 if pd.bomb_cap > 0 => {
-            if let Some(h) = sprites.get("prop_bomb") {
-                d.sprite(h, 0, ITEM_X, ITEM_Y, false);
-            } else {
-                d.rect(ITEM_X + 4.0, ITEM_Y + 4.0, 12.0, 12.0, "#303848");
+        let flash = pd.item_cycle_flash > 0;
+        match pd.selected_item {
+            2 => {
+                if let Some(h) = sprites.get("boomerang") {
+                    d.sprite(h, 0, ITEM_X, ITEM_Y, false);
+                } else {
+                    d.rect(ITEM_X + 4.0, ITEM_Y + 4.0, 12.0, 12.0, "#40e0c0");
+                }
+                if flash {
+                    d.text("B", ITEM_X + 14.0, ITEM_Y + 18.0, "#40ffff");
+                }
             }
-            let col = if flash { "#40ffff" } else { "#e8e8e8" };
-            d.text(&format!("{}", pd.bombs), ITEM_X + 12.0, ITEM_Y + 18.0, col);
-        }
-        _ => {
-            d.text("—", ITEM_X + 6.0, ITEM_Y + 14.0, "#808080");
+            1 if pd.bomb_cap > 0 => {
+                if let Some(h) = sprites.get("prop_bomb") {
+                    d.sprite(h, 0, ITEM_X, ITEM_Y, false);
+                } else {
+                    d.rect(ITEM_X + 4.0, ITEM_Y + 4.0, 12.0, 12.0, "#303848");
+                }
+                let col = if flash { "#40ffff" } else { "#e8e8e8" };
+                d.text(&format!("{}", pd.bombs), ITEM_X + 12.0, ITEM_Y + 18.0, col);
+            }
+            _ => {
+                d.text("—", ITEM_X + 6.0, ITEM_Y + 14.0, "#808080");
+            }
         }
     }
 

@@ -46,11 +46,19 @@ impl Platform {
             audio,
         }));
 
+        {
+            let mut p = platform.borrow_mut();
+            let portrait = viewport_is_portrait(&p.window);
+            p.input.set_viewport_portrait(portrait);
+        }
+
         let resize_target = platform.clone();
         let resize_listener = Closure::wrap(Box::new(move |_event: web_sys::Event| {
             let mut p = resize_target.borrow_mut();
             let window = p.window.clone();
             let _ = p.canvas.resize(&window);
+            let portrait = viewport_is_portrait(&window);
+            p.input.set_viewport_portrait(portrait);
         }) as Box<dyn FnMut(web_sys::Event)>);
         window
             .add_event_listener_with_callback("resize", resize_listener.as_ref().unchecked_ref())
@@ -70,4 +78,18 @@ impl Platform {
 
         Ok(platform)
     }
+}
+
+fn viewport_is_portrait(window: &Window) -> bool {
+    let w = window
+        .inner_width()
+        .ok()
+        .and_then(|v| v.as_f64())
+        .unwrap_or(480.0);
+    let h = window
+        .inner_height()
+        .ok()
+        .and_then(|v| v.as_f64())
+        .unwrap_or(270.0);
+    w < h
 }

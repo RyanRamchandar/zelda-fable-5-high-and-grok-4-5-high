@@ -55,7 +55,19 @@ pub fn start() {
 
         {
             let mut g = game_loop.borrow_mut();
-            for _ in 0..steps {
+            let mut input = input;
+            for step in 0..steps {
+                if step > 0 {
+                    // Edge pulses are one-shot per snapshot; don't re-fire on catch-up.
+                    for b in input.buttons.iter_mut() {
+                        b.pressed = false;
+                    }
+                    for b in input.debug.iter_mut() {
+                        b.pressed = false;
+                    }
+                    input.minimap_toggle = false;
+                    input.menu_tap = None;
+                }
                 let events = g.update(&input);
                 for event in events {
                     match event {

@@ -83,16 +83,28 @@ fn update_main(game: &mut Game, input: &InputState) {
     game.ui.title.prev_move_x = input.move_vec.0;
 
     if game.ui.title.confirm_wipe {
+        if let Some(tap) = input.menu_tap {
+            if let Some(idx) = crate::ui::touch::hit_rows(tap, 150.0, 24.0, 2, 160.0, 320.0) {
+                if idx == game.ui.title.cursor {
+                    // second tap confirms
+                } else {
+                    game.ui.title.cursor = idx;
+                    blip(game, SfxId::MenuMove);
+                    return;
+                }
+            }
+        }
         if input.buttons[BUTTON_DASH].pressed || input.buttons[BUTTON_PAUSE].pressed {
             game.ui.title.confirm_wipe = false;
             game.ui.title.cursor = 0;
             blip(game, SfxId::MenuBack);
             return;
         }
-        if input.buttons[BUTTON_ATTACK].pressed
+        let confirm = input.buttons[BUTTON_ATTACK].pressed
             || input.buttons[BUTTON_CONFIRM].pressed
             || input.buttons[BUTTON_INTERACT].pressed
-        {
+            || input.menu_tap.is_some();
+        if confirm {
             if game.ui.title.cursor == 0 {
                 game.ui.title.confirm_wipe = false;
                 blip(game, SfxId::MenuBack);
@@ -103,6 +115,18 @@ fn update_main(game: &mut Game, input: &InputState) {
             }
         }
         return;
+    }
+
+    if let Some(tap) = input.menu_tap {
+        if let Some(idx) = crate::ui::touch::hit_rows(tap, 110.0, 26.0, len, 150.0, 360.0) {
+            if idx != game.ui.title.cursor {
+                game.ui.title.cursor = idx;
+                blip(game, SfxId::MenuMove);
+                return;
+            }
+            activate_main(game, rows.get(idx).copied());
+            return;
+        }
     }
 
     if input.buttons[BUTTON_ATTACK].pressed
@@ -235,6 +259,47 @@ fn update_chapters(game: &mut Game, input: &InputState) {
         } else if prev_y <= 0.4 && my > 0.55 {
             game.ui.title.chapter_action = 1;
             blip(game, SfxId::MenuMove);
+        }
+    }
+
+    if let Some(tap) = input.menu_tap {
+        // Three cards at x=30+i*150, 140×150, y=80.
+        for i in 0..3usize {
+            let x = 30.0 + i as f32 * 150.0;
+            if tap.0 >= x && tap.0 <= x + 140.0 && tap.1 >= 80.0 && tap.1 <= 230.0 {
+                if game.ui.title.chapter_cursor != i {
+                    game.ui.title.chapter_cursor = i;
+                    game.ui.title.chapter_action = 0;
+                    blip(game, SfxId::MenuMove);
+                    game.ui.title.prev_move_x = mx;
+                    game.ui.title.prev_move_y = my;
+                    return;
+                }
+                if i == 0 {
+                    // Play vs Restart by Y
+                    let action = if tap.1 >= 212.0 { 1 } else { 0 };
+                    if action != game.ui.title.chapter_action {
+                        game.ui.title.chapter_action = action;
+                        blip(game, SfxId::MenuMove);
+                        game.ui.title.prev_move_x = mx;
+                        game.ui.title.prev_move_y = my;
+                        return;
+                    }
+                    if action == 0 {
+                        game.mode = state::GameMode::Play;
+                        blip(game, SfxId::MenuConfirm);
+                    } else {
+                        game.ui.title.confirm_restart = true;
+                        game.ui.title.chapter_action = 0;
+                        blip(game, SfxId::MenuConfirm);
+                    }
+                } else {
+                    blip(game, SfxId::Refused);
+                }
+                game.ui.title.prev_move_x = mx;
+                game.ui.title.prev_move_y = my;
+                return;
+            }
         }
     }
 

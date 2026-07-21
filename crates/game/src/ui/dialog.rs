@@ -67,7 +67,7 @@ impl DialogState {
 
         let attack = input.buttons[BUTTON_ATTACK].pressed;
         let interact = input.buttons[BUTTON_INTERACT].pressed;
-        let advance = attack || interact;
+        let advance = attack || interact || input.menu_tap.is_some();
 
         if !advance {
             self.advance_armed = true;

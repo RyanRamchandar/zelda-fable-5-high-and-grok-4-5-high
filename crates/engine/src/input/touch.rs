@@ -6,33 +6,93 @@ use wasm_bindgen::closure::Closure;
 use wasm_bindgen::JsCast;
 use web_sys::{HtmlCanvasElement, TouchEvent, Window};
 
-use super::{SharedInput, BUTTON_ATTACK, BUTTON_DASH};
+use super::{
+    SharedInput, BUTTON_ATTACK, BUTTON_CYCLE, BUTTON_DASH, BUTTON_INTERACT, BUTTON_ITEM,
+    BUTTON_PAUSE,
+};
 
 pub const JOYSTICK_MAX_RADIUS: f32 = 24.0;
-const BUTTON_RADIUS: f32 = 18.0;
-const ATTACK_POS: (f32, f32) = (430.0, 230.0);
-const DASH_POS: (f32, f32) = (400.0, 250.0);
+const HIT_GRACE: f32 = 4.0;
+
+struct TouchButton {
+    button: usize,
+    cx: f32,
+    cy: f32,
+    r: f32,
+}
+
+const TOUCH_BUTTONS: &[TouchButton] = &[
+    TouchButton {
+        button: BUTTON_ATTACK,
+        cx: 446.0,
+        cy: 224.0,
+        r: 20.0,
+    },
+    TouchButton {
+        button: BUTTON_ITEM,
+        cx: 404.0,
+        cy: 246.0,
+        r: 16.0,
+    },
+    TouchButton {
+        button: BUTTON_DASH,
+        cx: 462.0,
+        cy: 184.0,
+        r: 14.0,
+    },
+    TouchButton {
+        button: BUTTON_INTERACT,
+        cx: 412.0,
+        cy: 196.0,
+        r: 13.0,
+    },
+    TouchButton {
+        button: BUTTON_CYCLE,
+        cx: 376.0,
+        cy: 218.0,
+        r: 10.0,
+    },
+    // Below corner-minimap strip so it isn't covered by the 68×68 map hit target.
+    TouchButton {
+        button: BUTTON_PAUSE,
+        cx: 468.0,
+        cy: 78.0,
+        r: 11.0,
+    },
+];
+
+#[derive(Clone, Debug)]
+pub struct TouchButtonGeom {
+    pub button: usize,
+    pub cx: f32,
+    pub cy: f32,
+    pub r: f32,
+    pub held: bool,
+}
 
 #[derive(Clone, Debug, Default)]
 pub struct TouchOverlay {
     pub joystick_origin: Option<(f32, f32)>,
     pub joystick_knob: Option<(f32, f32)>,
-    pub attack_pos: (f32, f32),
-    pub dash_pos: (f32, f32),
-    pub button_radius: f32,
+    pub buttons: Vec<TouchButtonGeom>,
 }
 
+#[derive(Clone)]
 enum TouchRole {
+    /// Left-half touch awaiting move; promotes to Joystick or menu_tap.
+    PendingLeft { origin: (f32, f32) },
     Joystick { origin: (f32, f32) },
-    Attack,
-    Dash,
+    Button(usize),
 }
+
+const JOYSTICK_PROMOTE: f32 = 8.0;
 
 pub(crate) struct TouchState {
     pub touch_active: bool,
     roles: HashMap<i32, TouchRole>,
     joystick_origin: Option<(f32, f32)>,
     joystick_knob: Option<(f32, f32)>,
+    pub menu_tap_pulse: Option<(f32, f32)>,
 }
 
 impl TouchState {
@@ -42,16 +102,29 @@ impl TouchState {
             roles: HashMap::new(),
             joystick_origin: None,
             joystick_knob: None,
+            menu_tap_pulse: None,
         }
     }
 
     pub fn overlay_geometry(&self) -> TouchOverlay {
+        let mut buttons = Vec::with_capacity(TOUCH_BUTTONS.len());
+        for b in TOUCH_BUTTONS {
+            let held = self.roles.values().any(|r| match r {
+                TouchRole::Button(idx) => *idx == b.button,
+                TouchRole::Joystick { .. } | TouchRole::PendingLeft { .. } => false,
+            });
+            buttons.push(TouchButtonGeom {
+                button: b.button,
+                cx: b.cx,
+                cy: b.cy,
+                r: b.r,
+                held,
+            });
+        }
         TouchOverlay {
             joystick_origin: self.joystick_origin,
             joystick_knob: self.joystick_knob,
-            attack_pos: ATTACK_POS,
-            dash_pos: DASH_POS,
-            button_radius: BUTTON_RADIUS,
+            buttons,
         }
     }
 }
@@ -143,6 +216,17 @@ fn client_to_logical(
     (x, y)
 }
 
+fn nearest_button(x: f32, y: f32) -> Option<&'static TouchButton> {
+    let mut best: Option<(&TouchButton, f32)> = None;
+    for b in TOUCH_BUTTONS {
+        let d = dist((x, y), (b.cx, b.cy));
+        if d <= b.r + HIT_GRACE && best.map(|(_, bd)| d < bd).unwrap_or(true) {
+            best = Some((b, d));
+        }
+    }
+    best.map(|(b, _)| b)
+}
+
 fn handle_start(state: &mut SharedInput, te: &TouchEvent, canvas: &HtmlCanvasElement, scale: f64) {
     let touches = te.changed_touches();
     for i in 0..touches.length() {
@@ -152,22 +236,22 @@ fn handle_start(state: &mut SharedInput, te: &TouchEvent, canvas: &HtmlCanvasEle
         let id = t.identifier();
         let (x, y) = client_to_logical(canvas, t.client_x() as f64, t.client_y() as f64, scale);
 
-        if dist((x, y), ATTACK_POS) <= BUTTON_RADIUS {
-            state.touch.roles.insert(id, TouchRole::Attack);
-            continue;
-        }
-        if dist((x, y), DASH_POS) <= BUTTON_RADIUS {
-            state.touch.roles.insert(id, TouchRole::Dash);
-            continue;
-        }
+        // Left half: defer joystick until the finger moves (menu taps).
         if x < crate::canvas::WIDTH as f32 * 0.5 {
             state
                 .touch
                 .roles
-                .insert(id, TouchRole::Joystick { origin: (x, y) });
-            state.touch.joystick_origin = Some((x, y));
-            state.touch.joystick_knob = Some((x, y));
+                .insert(id, TouchRole::PendingLeft { origin: (x, y) });
+            continue;
         }
+
+        if let Some(b) = nearest_button(x, y) {
+            state.touch.roles.insert(id, TouchRole::Button(b.button));
+            continue;
+        }
+
+        // Right-half unclaimed tap → menu_tap.
+        state.touch.menu_tap_pulse = Some((x, y));
     }
 }
 
@@ -179,10 +263,23 @@ fn handle_move(state: &mut SharedInput, te: &TouchEvent, canvas: &HtmlCanvasElem
         };
         let id = t.identifier();
         let (x, y) = client_to_logical(canvas, t.client_x() as f64, t.client_y() as f64, scale);
-        if let Some(TouchRole::Joystick { origin }) = state.touch.roles.get(&id) {
-            let origin = *origin;
-            let (kx, ky) = clamp_to_radius(origin, (x, y), JOYSTICK_MAX_RADIUS);
-            state.touch.joystick_knob = Some((kx, ky));
+        match state.touch.roles.get(&id).cloned() {
+            Some(TouchRole::PendingLeft { origin }) => {
+                if dist((x, y), origin) >= JOYSTICK_PROMOTE {
+                    state
+                        .touch
+                        .roles
+                        .insert(id, TouchRole::Joystick { origin });
+                    state.touch.joystick_origin = Some(origin);
+                    let (kx, ky) = clamp_to_radius(origin, (x, y), JOYSTICK_MAX_RADIUS);
+                    state.touch.joystick_knob = Some((kx, ky));
+                }
+            }
+            Some(TouchRole::Joystick { origin }) => {
+                let (kx, ky) = clamp_to_radius(origin, (x, y), JOYSTICK_MAX_RADIUS);
+                state.touch.joystick_knob = Some((kx, ky));
+            }
+            _ => {}
         }
     }
 }
@@ -195,16 +292,23 @@ fn handle_end(state: &mut SharedInput, te: &TouchEvent) {
         };
         let id = t.identifier();
         if let Some(role) = state.touch.roles.remove(&id) {
-            if matches!(role, TouchRole::Joystick { .. }) {
-                state.touch.joystick_origin = None;
-                state.touch.joystick_knob = None;
-                for role in state.touch.roles.values() {
-                    if let TouchRole::Joystick { origin } = role {
-                        state.touch.joystick_origin = Some(*origin);
-                        state.touch.joystick_knob = Some(*origin);
-                        break;
+            match role {
+                TouchRole::PendingLeft { origin } => {
+                    // Stationary left tap → menu_tap (title/pause rows).
+                    state.touch.menu_tap_pulse = Some(origin);
+                }
+                TouchRole::Joystick { .. } => {
+                    state.touch.joystick_origin = None;
+                    state.touch.joystick_knob = None;
+                    for role in state.touch.roles.values() {
+                        if let TouchRole::Joystick { origin } = role {
+                            state.touch.joystick_origin = Some(*origin);
+                            state.touch.joystick_knob = Some(*origin);
+                            break;
+                        }
                     }
                 }
+                TouchRole::Button(_) => {}
             }
         }
     }
@@ -216,9 +320,8 @@ fn recompute_outputs(state: &mut SharedInput) {
 
     for role in state.touch.roles.values() {
         match role {
-            TouchRole::Attack => state.touch_held[BUTTON_ATTACK] = true,
-            TouchRole::Dash => state.touch_held[BUTTON_DASH] = true,
-            TouchRole::Joystick { .. } => {}
+            TouchRole::Button(btn) => state.touch_held[*btn] = true,
+            TouchRole::Joystick { .. } | TouchRole::PendingLeft { .. } => {}
         }
     }
 

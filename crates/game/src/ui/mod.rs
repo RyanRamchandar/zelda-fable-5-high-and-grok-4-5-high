@@ -10,6 +10,7 @@ pub mod minimap;
 pub mod pause;
 pub mod shop;
 pub mod title;
+pub mod touch;
 pub mod viewer;
 
 use content::maps::MapId;
@@ -69,8 +70,8 @@ impl Default for UiState {
     }
 }
 
-pub fn render_hud(d: &mut Draw, world: &World, sprites: &SpriteMap) {
-    hud::draw(d, world, sprites);
+pub fn render_hud(d: &mut Draw, world: &World, sprites: &SpriteMap, hide_item_slot: bool) {
+    hud::draw(d, world, sprites, hide_item_slot);
 }
 
 pub fn render_debug(

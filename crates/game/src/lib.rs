@@ -238,6 +238,18 @@ impl Game {
             return events::drain(self, input);
         }
 
+        // Portrait + touch: freeze play until rotated (title still reachable via quit).
+        if input.touch_active && input.viewport_portrait {
+            return events::drain(self, input);
+        }
+
+        // Corner minimap toggle via touch tap (KeyM path stays).
+        if let Some(tap) = input.menu_tap {
+            if ui::touch::hit_corner_minimap(tap) {
+                self.ui.minimap.show_corner = !self.ui.minimap.show_corner;
+            }
+        }
+
         // Pause routing before dialog/shop early-out.
         if ui::pause::update(self, input) {
             return events::drain(self, input);
@@ -421,7 +433,7 @@ impl Game {
         }
 
         d.set_offset(0.0, 0.0);
-        ui::render_hud(d, &self.world, &self.sprites);
+        ui::render_hud(d, &self.world, &self.sprites, self.touch_active);
         boss::render_overlay(d, self);
         self.ui.credits.draw(d);
         if self.current_map == MapId::Dungeon {
@@ -471,30 +483,10 @@ impl Game {
         );
 
         if self.touch_active {
-            let o = &self.touch_overlay;
-            if let Some((ox, oy)) = o.joystick_origin {
-                d.circle(
-                    ox,
-                    oy,
-                    engine::input::JOYSTICK_MAX_RADIUS,
-                    "rgba(255,255,255,0.25)",
-                );
-            }
-            if let Some((kx, ky)) = o.joystick_knob {
-                d.circle(kx, ky, 8.0, "rgba(255,255,255,0.45)");
-            }
-            d.circle(
-                o.attack_pos.0,
-                o.attack_pos.1,
-                o.button_radius,
-                "rgba(255,80,80,0.35)",
-            );
-            d.circle(
-                o.dash_pos.0,
-                o.dash_pos.1,
-                o.button_radius,
-                "rgba(80,160,255,0.35)",
-            );
+            ui::touch::render(d, &self.touch_overlay, &self.world, &self.sprites);
+        }
+        if self.touch_active && self.last_input.viewport_portrait {
+            ui::touch::render_portrait_hint(d);
         }
     }
 }
