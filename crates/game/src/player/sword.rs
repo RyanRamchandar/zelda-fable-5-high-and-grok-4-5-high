@@ -313,7 +313,11 @@ pub fn update_beams(world: &mut World) {
                 EntityKind::Player
                 | EntityKind::Dummy
                 | EntityKind::Pickup
-                | EntityKind::FairyFountain => continue,
+                | EntityKind::FairyFountain
+                | EntityKind::Slime
+                | EntityKind::Bat
+                | EntityKind::Octorok
+                | EntityKind::OctorokRock => continue,
             }
             let EntityData::Beam(b) = &mut e.data else {
                 continue;

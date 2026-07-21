@@ -15,8 +15,12 @@ pub enum EntityKind {
     Pickup,
     SwordBeam,
     FairyFountain,
-    /// Slow test projectile (H key). 1B may reuse pattern for rocks.
+    /// Slow test projectile (H key).
     DebugShot,
+    Slime,
+    Bat,
+    Octorok,
+    OctorokRock,
 }
 
 /// Collision layer bits (bitmask).
@@ -60,6 +64,10 @@ pub enum EntityData {
     Pickup(PickupData),
     Beam(BeamData),
     Fountain,
+    Slime(SlimeData),
+    Bat(BatData),
+    Octorok(OctorokData),
+    Rock(RockData),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -176,6 +184,66 @@ pub struct BeamData {
     pub hit: bool,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SlimeState {
+    Idle,
+    Chase,
+    LungeWindup,
+    Lunge,
+    Recover,
+}
+
+#[derive(Clone, Debug)]
+pub struct SlimeData {
+    pub spawn_telegraph: u16,
+    pub state: SlimeState,
+    pub timer: u16,
+    pub hop_phase: u16,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum BatState {
+    Hover,
+    SwoopTelegraph,
+    Swoop,
+    Climb,
+}
+
+#[derive(Clone, Debug)]
+pub struct BatData {
+    pub spawn_telegraph: u16,
+    pub state: BatState,
+    pub timer: u16,
+    pub hover_phase: f32,
+    pub swoop_origin: Vec2,
+    pub swoop_target: Vec2,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum OctorokState {
+    Idle,
+    SpitTelegraph,
+    Spit,
+    Hide,
+}
+
+#[derive(Clone, Debug)]
+pub struct OctorokData {
+    pub spawn_telegraph: u16,
+    pub state: OctorokState,
+    pub timer: u16,
+    pub cycle: u16,
+}
+
+#[derive(Clone, Debug)]
+pub struct RockData {
+    pub dir: Vec2,
+    pub damage: f32,
+    pub from_player: bool,
+    pub hit: bool,
+    pub swing_id: u32,
+}
+
 #[derive(Clone, Debug)]
 pub struct Entity {
     pub kind: EntityKind,
@@ -278,4 +346,10 @@ impl Entity {
         }
     }
 
+    pub fn is_enemy(&self) -> bool {
+        matches!(
+            self.kind,
+            EntityKind::Slime | EntityKind::Bat | EntityKind::Octorok | EntityKind::Dummy
+        )
+    }
 }

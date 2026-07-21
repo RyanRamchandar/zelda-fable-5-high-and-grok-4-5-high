@@ -86,3 +86,39 @@ pub const ENERGY_ORB: f32 = 15.0;
 // --- Debug shot ---
 pub const DEBUG_SHOT_SPEED: f32 = 1.2;
 pub const DEBUG_SHOT_DAMAGE: f32 = 1.0;
+
+// --- Enemies (Phase 1B) ---
+pub const SLIME_HP: i32 = 3;
+pub const SLIME_WANDER: f32 = 0.3;
+pub const SLIME_CHASE: f32 = 0.7;
+pub const SLIME_LUNGE_SPEED: f32 = 4.0;
+pub const SLIME_CHASE_RANGE: f32 = 96.0;
+pub const SLIME_LUNGE_RANGE: f32 = 28.0;
+pub const SLIME_HOP_MOVE: u16 = 12;
+pub const SLIME_HOP_REST: u16 = 8;
+pub const SLIME_WINDUP: u16 = 20;
+pub const SLIME_LUNGE_TICKS: u16 = 8;
+pub const SLIME_RECOVER: u16 = 20;
+pub const SLIME_CONTACT: i32 = 1; // half-heart
+
+pub const BAT_HP: i32 = 2;
+pub const BAT_HOVER_DRIFT: f32 = 0.35;
+pub const BAT_SWOOP_SPEED: f32 = 2.2;
+pub const BAT_SWOOP_PERIOD: u16 = 180;
+pub const BAT_TELEGRAPH: u16 = 20;
+pub const BAT_SWOOP_TICKS: u16 = 40;
+pub const BAT_CLIMB_TICKS: u16 = 30;
+pub const BAT_CONTACT: i32 = 1;
+
+pub const OCTOROK_HP: i32 = 3;
+pub const OCTOROK_CYCLE: u16 = 150;
+pub const OCTOROK_SPIT_TELEGRAPH: u16 = 20;
+pub const OCTOROK_HIDE: u16 = 60;
+pub const OCTOROK_ROCK_SPEED: f32 = 2.5;
+pub const OCTOROK_ROCK_DAMAGE: f32 = 1.0;
+pub const OCTOROK_ROCK_REFLECT_DAMAGE: f32 = 1.0;
+
+pub const SPAWN_TELEGRAPH: u16 = 45;
+pub const WAVE_LULL: u16 = 120;
+pub const WAVE_ALIVE_CAP: usize = 10;
+pub const ENEMY_IFRAMES: u16 = 10;

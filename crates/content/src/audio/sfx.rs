@@ -21,6 +21,17 @@ pub enum SfxId {
     RankUp,
     RankDown,
     FountainChime,
+    // Phase 1B enemies / waves
+    SlimeSquish,
+    SlimeLunge,
+    BatSqueak,
+    BatSwoop,
+    OctorokSpit,
+    OctorokDuck,
+    EnemyHurt,
+    SpawnShimmer,
+    WaveCue,
+    ReflectZing,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -64,6 +75,16 @@ pub fn spec(id: SfxId) -> SfxSpec {
         SfxId::RankUp => sine(440.0, 880.0, 0.02, 0.14, 0.14),
         SfxId::RankDown => square(330.0, 160.0, 0.02, 0.14, 0.12),
         SfxId::FountainChime => sine(740.0, 980.0, 0.02, 0.16, 0.08),
+        SfxId::SlimeSquish => noise(140.0, 80.0, 0.01, 0.09, 0.12, 0.55),
+        SfxId::SlimeLunge => saw(220.0, 360.0, 0.01, 0.1, 0.16),
+        SfxId::BatSqueak => sine(980.0, 1240.0, 0.005, 0.07, 0.1),
+        SfxId::BatSwoop => saw(640.0, 280.0, 0.01, 0.12, 0.14),
+        SfxId::OctorokSpit => square(180.0, 90.0, 0.01, 0.1, 0.14),
+        SfxId::OctorokDuck => noise(100.0, 60.0, 0.01, 0.08, 0.1, 0.4),
+        SfxId::EnemyHurt => saw(200.0, 110.0, 0.005, 0.08, 0.14),
+        SfxId::SpawnShimmer => sine(520.0, 780.0, 0.02, 0.14, 0.1),
+        SfxId::WaveCue => square(330.0, 520.0, 0.02, 0.16, 0.14),
+        SfxId::ReflectZing => sine(880.0, 1320.0, 0.005, 0.09, 0.14),
     }
 }
 

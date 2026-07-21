@@ -63,14 +63,14 @@ pub fn resolve_hits(world: &mut World) {
     }
     world.active_attacks.clear();
 
-    // Enemy/debug projectiles → player (and player beams → enemies)
+    // Projectiles: beams + octorok rocks
     let ids = world.alive_ids();
     let pid = world.player_id;
     for id in ids {
         if id == pid {
             continue;
         }
-        let (kind, from_player, center, dir, damage, knockback, swing_id, hit) = {
+        let info = {
             let Some(e) = world.get(id) else {
                 continue;
             };
@@ -79,7 +79,7 @@ pub fn resolve_hits(world: &mut World) {
                     let EntityData::Beam(b) = &e.data else {
                         continue;
                     };
-                    (
+                    Some((
                         e.kind,
                         b.from_player,
                         e.center(),
@@ -88,13 +88,38 @@ pub fn resolve_hits(world: &mut World) {
                         b.knockback,
                         b.swing_id,
                         b.hit,
-                    )
+                        true,
+                    ))
+                }
+                EntityKind::OctorokRock => {
+                    let EntityData::Rock(r) = &e.data else {
+                        continue;
+                    };
+                    Some((
+                        e.kind,
+                        r.from_player,
+                        e.center(),
+                        r.dir,
+                        r.damage,
+                        2.0,
+                        r.swing_id,
+                        r.hit,
+                        false,
+                    ))
                 }
                 EntityKind::Player
                 | EntityKind::Dummy
                 | EntityKind::Pickup
-                | EntityKind::FairyFountain => continue,
+                | EntityKind::FairyFountain
+                | EntityKind::Slime
+                | EntityKind::Bat
+                | EntityKind::Octorok => None,
             }
+        };
+        let Some((kind, from_player, center, dir, damage, knockback, swing_id, hit, _is_beam)) =
+            info
+        else {
+            continue;
         };
         if hit {
             continue;
@@ -108,11 +133,7 @@ pub fn resolve_hits(world: &mut World) {
                     continue;
                 }
                 world.mark_hit(swing_id, tid.index);
-                if let Some(e) = world.get_mut(id) {
-                    if let EntityData::Beam(b) = &mut e.data {
-                        b.hit = true;
-                    }
-                }
+                mark_proj_hit(world, id);
                 world.push_event(WorldEvent::AttackHit {
                     target: tid,
                     attack: AttackKind::Beam,
@@ -126,7 +147,6 @@ pub fn resolve_hits(world: &mut World) {
                 break;
             }
         } else {
-            // Hostile projectile vs player
             let hit_player = world
                 .get(pid)
                 .zip(world.get(id))
@@ -138,21 +158,27 @@ pub fn resolve_hits(world: &mut World) {
                 })
                 .unwrap_or(false);
             if hit_player {
-                if let Some(e) = world.get_mut(id) {
-                    if let EntityData::Beam(b) = &mut e.data {
-                        b.hit = true;
-                    }
-                }
+                // Keep projectile alive through damage routing so perfect-block
+                // can reflect it; apply_player_damage despawns on real hit / block.
+                mark_proj_hit(world, id);
                 let pcenter = world.get(pid).map(|p| p.center()).unwrap_or(Vec2::ZERO);
                 let knock_dir = pcenter.sub(center).normalize_or_zero();
+                let _ = kind;
                 world.push_event(WorldEvent::DamagedPlayer {
                     amount: damage.ceil() as i32,
                     dir: knock_dir,
                 });
-                if kind == EntityKind::DebugShot || kind == EntityKind::SwordBeam {
-                    world.despawn(id);
-                }
             }
+        }
+    }
+}
+
+fn mark_proj_hit(world: &mut World, id: crate::world::EntityId) {
+    if let Some(e) = world.get_mut(id) {
+        match &mut e.data {
+            EntityData::Beam(b) => b.hit = true,
+            EntityData::Rock(r) => r.hit = true,
+            _ => {}
         }
     }
 }

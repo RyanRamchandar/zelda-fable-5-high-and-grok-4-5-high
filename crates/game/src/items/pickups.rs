@@ -95,12 +95,13 @@ fn apply_pickup(world: &mut World, kind: PickupKind) {
 }
 
 pub fn spawn_drops(world: &mut World, pos: Vec2) {
+    // 1B: slightly richer drops so wave combat doesn't starve energy (was 70% nothing).
     let roll = world.rng.f32();
-    if roll < 0.70 {
+    if roll < 0.55 {
         // nothing
-    } else if roll < 0.82 {
+    } else if roll < 0.72 {
         spawn_one(world, pos, PickupKind::Rupee);
-    } else if roll < 0.91 {
+    } else if roll < 0.84 {
         let low_hp = world
             .get(world.player_id)
             .and_then(|p| p.health)
