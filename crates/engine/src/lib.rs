@@ -1,3 +1,4 @@
+pub mod atlas;
 pub mod audio;
 pub mod canvas;
 pub mod input;

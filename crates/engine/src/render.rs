@@ -1,10 +1,14 @@
 use wasm_bindgen::JsCast;
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement};
 
+use crate::atlas::{Atlas, SpriteHandle};
+
 pub struct Draw {
     ctx: CanvasRenderingContext2d,
     ox: f32,
     oy: f32,
+    atlas: Option<Atlas>,
+    smoothing_off: bool,
 }
 
 impl Draw {
@@ -15,11 +19,22 @@ impl Draw {
             .ok_or("no 2d context")?
             .dyn_into::<CanvasRenderingContext2d>()
             .map_err(|_| "not CanvasRenderingContext2d")?;
+        ctx.set_image_smoothing_enabled(false);
         Ok(Self {
             ctx,
             ox: 0.0,
             oy: 0.0,
+            atlas: None,
+            smoothing_off: true,
         })
+    }
+
+    pub fn set_atlas(&mut self, atlas: Atlas) {
+        self.atlas = Some(atlas);
+        if !self.smoothing_off {
+            self.ctx.set_image_smoothing_enabled(false);
+            self.smoothing_off = true;
+        }
     }
 
     /// Camera / UI offset applied inside draw primitives. World: `(-cam.x, -cam.y)`; HUD: `(0,0)`.
@@ -76,5 +91,110 @@ impl Draw {
         let _ = self
             .ctx
             .fill_text(s, f64::from(x + self.ox), f64::from(y + self.oy));
+    }
+
+    pub fn sprite(&self, h: SpriteHandle, frame: u32, x: f32, y: f32, flip_x: bool) {
+        let Some(atlas) = self.atlas.as_ref() else {
+            return;
+        };
+        let frame = frame.min(h.frames.saturating_sub(1));
+        let sx = f64::from(h.x + frame * h.frame_w);
+        let sy = f64::from(h.y);
+        let sw = f64::from(h.frame_w);
+        let sh = f64::from(h.frame_h);
+        let dx = f64::from(x + self.ox);
+        let dy = f64::from(y + self.oy);
+
+        if flip_x {
+            self.ctx.save();
+            let _ = self.ctx.translate(dx + sw, dy);
+            let _ = self.ctx.scale(-1.0, 1.0);
+            let _ = self
+                .ctx
+                .draw_image_with_html_canvas_element_and_sw_and_sh_and_dx_and_dy_and_dw_and_dh(
+                    atlas.canvas(),
+                    sx,
+                    sy,
+                    sw,
+                    sh,
+                    0.0,
+                    0.0,
+                    sw,
+                    sh,
+                );
+            self.ctx.restore();
+        } else {
+            let _ = self
+                .ctx
+                .draw_image_with_html_canvas_element_and_sw_and_sh_and_dx_and_dy_and_dw_and_dh(
+                    atlas.canvas(),
+                    sx,
+                    sy,
+                    sw,
+                    sh,
+                    dx,
+                    dy,
+                    sw,
+                    sh,
+                );
+        }
+    }
+
+    /// Draw sprite scaled (debug viewer 3×).
+    pub fn sprite_scaled(
+        &self,
+        h: SpriteHandle,
+        frame: u32,
+        x: f32,
+        y: f32,
+        scale: f32,
+        flip_x: bool,
+    ) {
+        let Some(atlas) = self.atlas.as_ref() else {
+            return;
+        };
+        let frame = frame.min(h.frames.saturating_sub(1));
+        let sx = f64::from(h.x + frame * h.frame_w);
+        let sy = f64::from(h.y);
+        let sw = f64::from(h.frame_w);
+        let sh = f64::from(h.frame_h);
+        let dw = sw * f64::from(scale);
+        let dh = sh * f64::from(scale);
+        let dx = f64::from(x + self.ox);
+        let dy = f64::from(y + self.oy);
+
+        if flip_x {
+            self.ctx.save();
+            let _ = self.ctx.translate(dx + dw, dy);
+            let _ = self.ctx.scale(-1.0, 1.0);
+            let _ = self
+                .ctx
+                .draw_image_with_html_canvas_element_and_sw_and_sh_and_dx_and_dy_and_dw_and_dh(
+                    atlas.canvas(),
+                    sx,
+                    sy,
+                    sw,
+                    sh,
+                    0.0,
+                    0.0,
+                    dw,
+                    dh,
+                );
+            self.ctx.restore();
+        } else {
+            let _ = self
+                .ctx
+                .draw_image_with_html_canvas_element_and_sw_and_sh_and_dx_and_dy_and_dw_and_dh(
+                    atlas.canvas(),
+                    sx,
+                    sy,
+                    sw,
+                    sh,
+                    dx,
+                    dy,
+                    dw,
+                    dh,
+                );
+        }
     }
 }

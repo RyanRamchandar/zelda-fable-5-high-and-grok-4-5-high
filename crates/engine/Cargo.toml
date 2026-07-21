@@ -16,6 +16,7 @@ features = [
   "HtmlCanvasElement",
   "HtmlElement",
   "CanvasRenderingContext2d",
+  "ImageData",
   "Element",
   "CssStyleDeclaration",
   "KeyboardEvent",
