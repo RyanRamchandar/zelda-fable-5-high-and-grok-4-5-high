@@ -18,6 +18,11 @@ pub const BUTTON_PAUSE: usize = 4;
 pub const BUTTON_CONFIRM: usize = 5;
 pub const BUTTON_COUNT: usize = 6;
 
+pub const DEBUG_OVERLAY: usize = 0;
+pub const DEBUG_VIEWER: usize = 1;
+pub const DEBUG_ACTION: usize = 2;
+pub const DEBUG_COUNT: usize = 3;
+
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Button {
     pub held: bool,
@@ -28,6 +33,7 @@ pub struct Button {
 pub struct InputState {
     pub move_vec: (f32, f32),
     pub buttons: [Button; BUTTON_COUNT],
+    pub debug: [Button; DEBUG_COUNT],
     pub touch_active: bool,
     pub touch_overlay: TouchOverlay,
 }
@@ -37,6 +43,7 @@ impl Default for InputState {
         Self {
             move_vec: (0.0, 0.0),
             buttons: [Button::default(); BUTTON_COUNT],
+            debug: [Button::default(); DEBUG_COUNT],
             touch_active: false,
             touch_overlay: TouchOverlay::default(),
         }
@@ -57,6 +64,8 @@ pub(crate) struct SharedInput {
     pub pad_held: [bool; BUTTON_COUNT],
     pub touch_held: [bool; BUTTON_COUNT],
     pub prev_held: [bool; BUTTON_COUNT],
+    pub debug_held: [bool; DEBUG_COUNT],
+    pub prev_debug: [bool; DEBUG_COUNT],
     pub touch: touch::TouchState,
 }
 
@@ -70,6 +79,8 @@ impl SharedInput {
             pad_held: [false; BUTTON_COUNT],
             touch_held: [false; BUTTON_COUNT],
             prev_held: [false; BUTTON_COUNT],
+            debug_held: [false; DEBUG_COUNT],
+            prev_debug: [false; DEBUG_COUNT],
             touch: touch::TouchState::new(),
         }
     }
@@ -129,9 +140,21 @@ impl Input {
                 pressed: held[i] && !s.prev_held[i],
             };
         }
+        let mut debug = [Button::default(); DEBUG_COUNT];
+        for ((slot, held), prev) in debug
+            .iter_mut()
+            .zip(s.debug_held.iter())
+            .zip(s.prev_debug.iter())
+        {
+            *slot = Button {
+                held: *held,
+                pressed: *held && !*prev,
+            };
+        }
         InputState {
             move_vec: s.merged_move(),
             buttons,
+            debug,
             touch_active: s.touch.touch_active,
             touch_overlay: s.touch.overlay_geometry(),
         }
@@ -140,5 +163,6 @@ impl Input {
     pub fn end_frame(&mut self) {
         let mut s = self.shared.borrow_mut();
         s.prev_held = s.held();
+        s.prev_debug = s.debug_held;
     }
 }

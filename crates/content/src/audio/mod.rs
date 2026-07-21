@@ -1,1 +1,3 @@
-//! SFX descriptors and music patterns (Phase 1+).
+//! SFX descriptors and music patterns.
+
+pub mod sfx;

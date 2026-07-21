@@ -1,8 +1,10 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use content::audio::sfx::{self, OscKind as ContentOsc};
 use wasm_bindgen::prelude::*;
 
+use engine::audio::{OscKind, SfxParams};
 use engine::Platform;
 use game::{Game, GameEvent, SAVE_KEY};
 
@@ -41,7 +43,10 @@ pub fn start() {
                 let events = g.update(&input);
                 for event in events {
                     match event {
-                        GameEvent::Beep => p.audio.beep(880.0, 0.08),
+                        GameEvent::Sfx(id) => {
+                            let spec = sfx::spec(id);
+                            p.audio.play(&adapt_sfx(&spec));
+                        }
                         GameEvent::Save(json) => {
                             let _ = engine::save::save(SAVE_KEY, &json);
                         }
@@ -53,4 +58,22 @@ pub fn start() {
 
         p.input.end_frame();
     });
+}
+
+fn adapt_sfx(spec: &sfx::SfxSpec) -> SfxParams {
+    SfxParams {
+        osc: match spec.osc {
+            ContentOsc::Square => OscKind::Square,
+            ContentOsc::Triangle => OscKind::Triangle,
+            ContentOsc::Saw => OscKind::Saw,
+            ContentOsc::Sine => OscKind::Sine,
+            ContentOsc::Noise => OscKind::Noise,
+        },
+        freq_start: spec.freq_start,
+        freq_end: spec.freq_end,
+        attack_s: spec.attack_s,
+        decay_s: spec.decay_s,
+        gain: spec.gain,
+        noise_mix: spec.noise_mix,
+    }
 }

@@ -35,6 +35,8 @@ features = [
   "AudioDestinationNode",
   "AudioNode",
   "BaseAudioContext",
+  "AudioBuffer",
+  "AudioBufferSourceNode",
   "Performance",
   "DomRect",
   "EventTarget",

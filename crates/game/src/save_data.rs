@@ -10,7 +10,8 @@ pub struct SaveGame {
 
 impl SaveGame {
     pub fn default_spawn() -> Self {
-        Self { x: 240.0, y: 135.0 }
+        // Open combat field south of the center pillar (60×34 tiles @ 16px).
+        Self { x: 480.0, y: 300.0 }
     }
 
     pub fn from_json(json: &str) -> Self {
