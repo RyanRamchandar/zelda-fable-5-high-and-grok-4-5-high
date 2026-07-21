@@ -72,22 +72,46 @@ skin, debug viewer. Seam contract frozen at 1A completion (WORKER_NOTES entry).
 
 ## Phase 2 — Ambitious Act 1 overworld
 
-**Goal:** The 240×240 contiguous overworld (GAME_DESIGN §4): all six named regions +
-connective terrain, chunked tile rendering, smooth camera, collision, region banners,
-NPCs/dialogue, shop, fairy fountains, gems as pickups with their region puzzles/fights,
-overworld minimap with fog + POIs, secrets (bomb walls, caves, heart pieces), full
-Act 1 enemy roster placed, interiors (houses/shop/caves) as room maps, save
-checkpoints at gems.
+**Goal:** The 240×240 contiguous overworld (GAME_DESIGN §4), built in two
+**sequential** sub-phases (briefs are authoritative):
+
+- **Phase 2A** (`WORKER_BRIEF_PHASE2A.md`) — foundation: `MapDef` v2 (ground/
+  detail/overhang layers, collision flags incl. water + one-way ledges, spawns/
+  triggers/regions/entries, tile catalog, painter helpers), core terrain art,
+  chunk-cached rendering in `engine::chunks` (LRU budget, dirty invalidation,
+  animated-tile overdraw), all six region terrain shells + river/bridges/roads,
+  Minish-Cap camera (dead-zone + eased lookahead), map switching with fade
+  transitions to interior stubs (6 houses, shop, 2 caves), distance-based
+  spawner, region banners, checkpoints, save v2 (map/entry/checkpoint/gems/
+  flags), debug F3 map-cycle + F4 teleport. Arena kept behind F3.
+- **Phase 2B** (`WORKER_BRIEF_PHASE2B.md`, starts only after 2A lands) —
+  content fill: props + region-distinct decoration, furnished interiors,
+  Interact verb + dialogue box + NPC/sign stubs, chests + rupee counter,
+  three gems as guarded objectives (grove pedestal, camp guard-group chest,
+  ruins pedestal) with the 3-gem shrine-door soft gate, authored encounters
+  from the Phase 1 roster, overworld minimap (corner + pause, fog persisted,
+  POIs, objective marker), 10 telegraphed secrets + 3 heart pieces.
+
+Deferred to **Phase 2C** (planner briefs after 2B; folded toward Gate B):
+gem *puzzles* (wind chimes, plate court, camp wave-battle with destructible
+barricades), shop economy UI, wisp/skeleton/raider enemy families, bomb walls
+going live, broken-bridge crank. 2B places all their locations/flags so 2C is
+content swap-in, not map surgery.
 
 **Acceptance criteria**
-1. Walk village → all six regions with zero loading/screen transitions outdoors; 60 fps.
-2. Three gems obtainable via their designed challenges; shrine door opens with all three.
-3. Minimap fog-reveals; objective marker tracks gem/shrine progression.
-4. Shop buy/sell works; rupee economy live; ≥8 secrets placed and telegraphed.
-5. Every region visually distinct (palette/props) and every interactable legible.
+1. Walk village → all six regions with zero loading/screen transitions outdoors; 60 fps
+   via chunk cache (2A).
+2. Interiors enter/exit with fades; death/reload → last checkpoint; save v2 roundtrips (2A).
+3. Soft critical path: elder quest → 3 guarded gems → shrine door opens (2B).
+4. Minimap fog-reveals and persists; objective marker tracks gem/shrine progression (2B).
+5. Every region visually distinct and every interactable legible; ≥8 secrets
+   placed and telegraphed; encounters match region identity (2B).
 
-**Ownership:** `content::maps` + `content::art` (tiles/props) = worker A;
-`game::puzzle`, NPC/dialogue/shop in `game::ui`+`items` = worker B; minimap = B.
+**Ownership:** 2A = `content::maps` v2 + terrain art + `engine::chunks` +
+`game::{state,world::spawner,draw_world,physics,camera,save_data,ui::banner}`.
+2B = placement/props/NPC art + `content::text` + `game::ui::{dialog,minimap}` +
+interact/chests + spawner groups + flag registry. Sequential — 2B edits files
+2A owns, so no parallel run.
 
 ---
 

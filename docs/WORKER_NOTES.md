@@ -134,3 +134,35 @@ All 1A frozen seams honored. Additive only: `EntityKind::{Slime,Bat,Octorok,Octo
 
 ### Phase 1 overall gate (ready for Phase 2 brief?)
 **YES** — with residual human playtest: perfect-block rock reflect feel, gamepad hardware, longer wave-3+ survival, art polish pass if planner wants higher bar.
+
+## Phase 2 planning — 2026-07-21 (Planner, Fable 5)
+
+- Phase 1 (1A+1B) accepted at `6bf033e`. Phase 2 split into two sequential
+  briefs written against the *actual* code, not the ARCHITECTURE ideal:
+  `WORKER_BRIEF_PHASE2A.md` (overworld foundation) then
+  `WORKER_BRIEF_PHASE2B.md` (content fill). 2B is blocked on 2A's completion
+  entry here; the 2B seam contract is PHASE2A §5 and freezes when 2A lands.
+- Key reality deltas the briefs encode: `MapDef` is v1 (single ground layer +
+  bool collision, no spawns/triggers) — 2A replaces it wholesale (only
+  permitted breaking seam; compiler-walked). `game::state`/GameMode does not
+  exist yet — 2A creates it for fade transitions. `draw_world::render_map` is
+  a hardcoded per-tile match — 2A rewrites it data-driven + chunk-cached
+  (`engine/src/chunks.rs`, new). `SaveGame` is `{x,y}` only — 2A ships v2
+  (map/entry/checkpoint/gems/flags); v1 saves fall back to New Game
+  (accepted). `WaveDirector` currently runs unconditionally — 2A scopes it to
+  `MapId::Arena` behind debug F3.
+- Scope call: PHASE_PLAN's old Phase 2 bundled gem puzzles, shop economy, and
+  new enemy families. Human priority is the ambitious map itself, so Phase 2
+  is now 2A (acreage + systems) + 2B (locations, NPC/sign stubs, guarded-gem
+  soft critical path, minimap, secrets) with a deferred **Phase 2C** (chime/
+  plate puzzles, camp wave battle, shop UI, wisp/skeleton/raiders, bomb
+  walls) briefed after 2B. 2B places every 2C location + flag so 2C is
+  swap-in. PHASE_PLAN.md Phase 2 section updated accordingly.
+- Perf posture: 240×240×3 layers unchunked is ~1.5k drawImage/frame (iPhone
+  risk), so chunk cache is a 2A hard requirement with an LRU budget (~48
+  chunks ≈ 12 MB — full-map cache would be ~170 MB, not acceptable), a
+  2-bakes-per-frame amortization rule, animated tiles as post-blit overdraw,
+  and a direct-draw fallback. Spawner uses distance activation/sleep so
+  placed-enemy count (~60–80 defs) never means 60 live AIs.
+- Sequential only: 2B edits region modules and game files 2A owns; there is
+  no zero-contention parallel split. Do not run 2A and 2B concurrently.
