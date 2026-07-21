@@ -624,3 +624,61 @@ gamepad/touch item parity still Phase 4, tunic palette cosmetic polish.
   `netlify status`/`gh auth status`, trigger login, stop once with a clear
   message, resume after the human authenticates.
 - PHASE_PLAN Phases 4–5 rewritten to match. No gameplay code in this commit.
+
+## Phase 4 completion — 2026-07-21 (Grok 4.5 High Fast worker)
+
+### Gate
+Read Phase 3B completion + Phase 4/5 planning. Honored Gate B seams (`SHARD_OF_COURAGE`,
+credits stub, checkpoint map, SaveGame v2). No gameplay tuning; play-mode update order
+only gained early-outs (Title / pause / portrait).
+
+### What landed (4A M1–M5)
+- **`GameMode::Title`** + `boot_to_title` / `had_save` via `SaveGame::try_from_json`
+- **`ui/title.rs`**: Main (Continue/New Game/Chapters/Sound) + Chapter Select cards
+  (Act 1 live progress + RESTART rupee-carry; Acts 2–3 locked + Refused)
+- **`ui/pause.rs`**: Map / Help / Options; removed `minimap.pause_open` toggle
+- Help: `objective_line` + `binding_rows()` + live input echo
+- Options: Resume / Restart checkpoint / Quit to Title / Sound
+- **Mute**: `SaveGame.muted` + `Settings` + `GameEvent::SetMuted` + `Audio::set_muted`
+- Credits: R/Confirm skip + hold-Attack fallback; post-credits village fade → Title Chapters
+- Engine: KeyR + pad Back(8) → CONFIRM; non-standard gamepad mapping one-shot warn
+
+### What landed (4B M6–M9)
+- Touch backend v2: data-driven `TOUCH_BUTTONS`, `TouchOverlay.buttons`, deferred
+  left-half `PendingLeft` → joystick promote or `menu_tap`, `viewport_portrait`
+- **`ui/touch.rs`**: skinned discs + item-in-B-disc; HUD item slot hidden when touch
+- Menu taps on title/chapter/pause/shop; dialog advance on `menu_tap`
+- `index.html`: `100dvh`, overscroll/user-select lock, apple-web-app metas
+- Portrait: rotate scrim + freeze play when `touch_active && viewport_portrait`
+- App: clear edge pulses on catch-up steps (fixes pause open/close same frame)
+- Pause button relocated to (468,78) under corner minimap
+
+### Frozen seams for Phase 5
+1. `GameMode::{Title,Play,Transition}` + title/pause APIs (`ui::title`, `ui::pause`)
+2. Touch button table in `engine::input::touch` + `TouchOverlay` / `menu_tap` /
+   `viewport_portrait`
+3. `Settings { muted }` + `GameEvent::SetMuted` + `Audio::set_muted`
+4. `SaveGame.muted` (`#[serde(default)]`, version stays 2)
+5. Credits → village transition → Title Chapters (`open_title_after_transition`)
+
+### Verification
+- `cargo check` + `clippy -D warnings` (wasm32) clean
+- `env -u NO_COLOR trunk build --release` ok
+- Playwright (`/tmp/p4_smoke/`): title NEW GAME tap, play + touch cluster, pause Map,
+  Help (objective + bindings + echo), resume, verbs; portrait boot shot; keyboard
+  Esc/ArrowRight Help confirmed via `KeyboardEvent.code` dispatch
+- **Processes cleaned**: http.server:8090 + headless_shell killed after smoke
+
+### Deviations / residual
+- Title logo is 48×24×2 strip (not ~200×48) — readable mark + `d.text` title line
+- Left-half menu taps use deferred joystick (brief said right-half `menu_tap` only;
+  needed for centered title rows — logged)
+- **Gamepad hardware**: still **owed — no hardware** in this environment; code path +
+  Help echo + pad-8 CONFIRM reviewed; non-standard mapping warns once
+- **Real iPhone**: owed for Gate C (Phase 5); Playwright iPhone 14 landscape used here
+- Old minimap pause footer still says "Esc/Enter: resume" (map render left unchanged)
+
+### Ready for Phase 5?
+**YES** — meta shell + all three input methods are first-class in code; Gate C polish/
+music/perf/deploy brief can proceed. Residual: human gamepad pad, real-device touch,
+feel-debt list for Phase 5 M1.
