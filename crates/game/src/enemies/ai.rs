@@ -80,7 +80,13 @@ pub fn count_alive_enemies(world: &World) -> usize {
         .filter(|(_, e)| {
             matches!(
                 e.kind,
-                EntityKind::Slime | EntityKind::Bat | EntityKind::Octorok
+                EntityKind::Slime
+                    | EntityKind::Bat
+                    | EntityKind::Octorok
+                    | EntityKind::RaiderSpear
+                    | EntityKind::RaiderTorch
+                    | EntityKind::Wisp
+                    | EntityKind::Skeleton
             )
         })
         .count()

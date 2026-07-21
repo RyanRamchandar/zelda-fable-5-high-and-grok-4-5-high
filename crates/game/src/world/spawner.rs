@@ -1,8 +1,9 @@
 //! Distance-activated spawn slots from MapDef.spawns.
 
+use content::flags::{self, CAMP_WAVE_CHAIN};
 use content::maps::{SpawnDef, SpawnKind, TILE_PX};
 
-use crate::enemies::{bat, octorok, slime};
+use crate::enemies::{bat, octorok, raider, skeleton, slime, wisp};
 use crate::math::Vec2;
 use crate::save_data::has_flag;
 use crate::world::entity::Entity;
@@ -30,10 +31,25 @@ pub struct SpawnSlot {
 
 pub struct Spawner {
     pub slots: Vec<SpawnSlot>,
+    /// Groups that must not distance-activate (camp wave chain).
+    pub locked_groups: Vec<u16>,
+    /// `GROUP_CAMP_GUARD` was set at map load — war already won.
+    pub camp_war_won: bool,
 }
 
 impl Spawner {
-    pub fn populate(world: &mut World) -> Self {
+    pub fn populate(world: &mut World, save_flags: &[u16]) -> Self {
+        let camp_war_won = has_flag(save_flags, flags::GROUP_CAMP_GUARD);
+        let mut locked_groups = Vec::new();
+        if camp_war_won {
+            locked_groups.push(flags::GRP_CAMP_W2);
+            locked_groups.push(flags::GRP_CAMP_W3);
+        } else {
+            for &(_, next) in &CAMP_WAVE_CHAIN {
+                locked_groups.push(next);
+            }
+        }
+
         let mut slots = Vec::new();
         for def in world.map.spawns.clone() {
             match def.kind {
@@ -43,7 +59,7 @@ impl Spawner {
                 | SpawnKind::Npc { .. }
                 | SpawnKind::Chest { .. }
                 | SpawnKind::Gem { .. } => {
-                    let id = spawn_kind(world, def.kind, tile_pos(def.tx, def.ty), &[]);
+                    let id = spawn_kind(world, def.kind, tile_pos(def.tx, def.ty));
                     slots.push(SpawnSlot {
                         def,
                         state: SlotState::Alive,
@@ -61,7 +77,11 @@ impl Spawner {
                 }
             }
         }
-        Self { slots }
+        Self {
+            slots,
+            locked_groups,
+            camp_war_won,
+        }
     }
 
     /// Re-apply save flags to already-spawned chests/gems after populate.
@@ -88,6 +108,30 @@ impl Spawner {
                 _ => {}
             }
         }
+    }
+
+    pub fn unlock_and_activate(&mut self, world: &mut World, group: u16) {
+        self.locked_groups.retain(|&g| g != group);
+        for i in 0..self.slots.len() {
+            if self.slots[i].def.group != group {
+                continue;
+            }
+            if self.slots[i].state != SlotState::Dormant {
+                continue;
+            }
+            if !is_hostile_kind(self.slots[i].def.kind) {
+                continue;
+            }
+            let pos = tile_pos(self.slots[i].def.tx, self.slots[i].def.ty);
+            let id = spawn_kind(world, self.slots[i].def.kind, pos);
+            self.slots[i].entity = Some(id);
+            self.slots[i].state = SlotState::Alive;
+            self.slots[i].far_ticks = 0;
+        }
+    }
+
+    pub fn is_locked(&self, group: u16) -> bool {
+        group != 0 && self.locked_groups.contains(&group)
     }
 
     pub fn update(&mut self, world: &mut World) {
@@ -132,16 +176,31 @@ impl Spawner {
 
             match self.slots[i].state {
                 SlotState::Dormant if dist < ACTIVATE_PX => {
-                    if is_hostile_kind(kind) && group != 0 && !group_dormant_eligible(self, group) {
+                    if self.is_locked(group) {
                         continue;
                     }
-                    let id = spawn_kind(world, kind, pos, &[]);
+                    if is_hostile_kind(kind) && group != 0 && !group_dormant_eligible(self, group)
+                    {
+                        continue;
+                    }
+                    let id = spawn_kind(world, kind, pos);
                     self.slots[i].entity = Some(id);
                     self.slots[i].state = SlotState::Alive;
                     self.slots[i].far_ticks = 0;
                 }
                 SlotState::Dead => {
                     if !is_hostile_kind(kind) {
+                        continue;
+                    }
+                    if self.is_locked(group) {
+                        continue;
+                    }
+                    // Do not rewind wave-1 while later waves are unlocked mid-chain.
+                    if group == flags::GRP_CAMP_GUARD
+                        && !self.camp_war_won
+                        && camp_chain_in_progress(self)
+                    {
+                        self.slots[i].far_ticks = 0;
                         continue;
                     }
                     // Grouped: only respawn when whole group is dormant-eligible.
@@ -155,12 +214,15 @@ impl Spawner {
                             .saturating_add(SCAN_INTERVAL as u32);
                         if self.slots[i].far_ticks >= RESPAWN_TICKS {
                             if group != 0 {
-                                // Reset entire group together.
                                 for s in &mut self.slots {
                                     if s.def.group == group && s.state == SlotState::Dead {
                                         s.state = SlotState::Dormant;
                                         s.far_ticks = 0;
                                     }
+                                }
+                                // Restart camp chain if wave-1 rewinds before war won.
+                                if group == flags::GRP_CAMP_GUARD && !self.camp_war_won {
+                                    reset_camp_chain(self, world);
                                 }
                             } else {
                                 self.slots[i].state = SlotState::Dormant;
@@ -173,6 +235,33 @@ impl Spawner {
                 }
                 _ => {}
             }
+        }
+    }
+}
+
+fn camp_chain_in_progress(spawner: &Spawner) -> bool {
+    for &(_, next) in &CAMP_WAVE_CHAIN {
+        if !spawner.locked_groups.contains(&next) {
+            return true;
+        }
+    }
+    false
+}
+
+fn reset_camp_chain(spawner: &mut Spawner, world: &mut World) {
+    for &g in &[flags::GRP_CAMP_W2, flags::GRP_CAMP_W3] {
+        if !spawner.locked_groups.contains(&g) {
+            spawner.locked_groups.push(g);
+        }
+        for slot in &mut spawner.slots {
+            if slot.def.group != g {
+                continue;
+            }
+            if let Some(id) = slot.entity.take() {
+                world.despawn(id);
+            }
+            slot.state = SlotState::Dormant;
+            slot.far_ticks = 0;
         }
     }
 }
@@ -195,7 +284,6 @@ pub fn group_cleared(spawner: &Spawner, group: u16) -> bool {
 }
 
 fn group_dormant_eligible(spawner: &Spawner, group: u16) -> bool {
-    // Allow activate if no living members; dead members ok (first spawn after clear waits on respawn).
     for s in &spawner.slots {
         if s.def.group == group && is_hostile_kind(s.def.kind) && s.state == SlotState::Alive {
             return false;
@@ -223,7 +311,14 @@ fn group_all_dead_far(spawner: &Spawner, group: u16, player_pos: Vec2) -> bool {
 fn is_hostile_kind(kind: SpawnKind) -> bool {
     matches!(
         kind,
-        SpawnKind::Slime | SpawnKind::Bat | SpawnKind::Octorok | SpawnKind::Dummy
+        SpawnKind::Slime
+            | SpawnKind::Bat
+            | SpawnKind::Octorok
+            | SpawnKind::RaiderSpear
+            | SpawnKind::RaiderTorch
+            | SpawnKind::Wisp
+            | SpawnKind::Skeleton
+            | SpawnKind::Dummy
     )
 }
 
@@ -238,11 +333,15 @@ fn tile_pos(tx: u32, ty: u32) -> Vec2 {
     Vec2::new(tx as f32 * TILE_PX, ty as f32 * TILE_PX)
 }
 
-fn spawn_kind(world: &mut World, kind: SpawnKind, pos: Vec2, _flags: &[u16]) -> EntityId {
+fn spawn_kind(world: &mut World, kind: SpawnKind, pos: Vec2) -> EntityId {
     match kind {
         SpawnKind::Slime => slime::spawn(world, pos),
         SpawnKind::Bat => bat::spawn(world, pos),
         SpawnKind::Octorok => octorok::spawn(world, pos),
+        SpawnKind::RaiderSpear => raider::spawn_spear(world, pos),
+        SpawnKind::RaiderTorch => raider::spawn_torch(world, pos),
+        SpawnKind::Wisp => wisp::spawn(world, pos),
+        SpawnKind::Skeleton => skeleton::spawn(world, pos),
         SpawnKind::FairyFountain => world.spawn(Entity::fountain(pos)),
         SpawnKind::Dummy => world.spawn(Entity::dummy(pos)),
         SpawnKind::Sign { text } => world.spawn(Entity::sign(pos, text)),

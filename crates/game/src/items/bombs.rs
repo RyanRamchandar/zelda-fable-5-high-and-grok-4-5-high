@@ -126,6 +126,7 @@ fn explode(game: &mut Game, id: crate::world::EntityId, center: Vec2) {
             game.world.push_event(WorldEvent::DamagedPlayer {
                 amount: tuning::BOMB_PLAYER_DAMAGE,
                 dir,
+                source: None,
             });
         }
     }

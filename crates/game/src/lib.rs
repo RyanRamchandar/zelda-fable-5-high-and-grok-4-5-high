@@ -3,6 +3,7 @@
 mod assets;
 mod combat;
 mod debug;
+mod draw_enemies;
 mod draw_world;
 mod enemies;
 mod fx;
@@ -102,7 +103,7 @@ impl Game {
                 h.max = save.max_hearts;
             }
         }
-        let mut spawner = Spawner::populate(&mut world);
+        let mut spawner = Spawner::populate(&mut world, &save.flags);
         spawner.apply_save(&mut world, save.gems, &save.flags);
         puzzle::paint_closed(&mut world, map_id, &save.flags);
         state::restore_shrine_door(&mut world, &save.flags);
@@ -352,17 +353,45 @@ impl Game {
                     }
                 }
                 WorldEvent::GroupCleared(group) => {
-                    if group == content::flags::GRP_CAMP_GUARD {
+                    if let Some(&(_, next)) = content::flags::CAMP_WAVE_CHAIN
+                        .iter()
+                        .find(|(from, _)| *from == group)
+                    {
+                        self.spawner.unlock_and_activate(&mut self.world, next);
+                        let toast = if next == content::flags::GRP_CAMP_W2 {
+                            "WAVE 2!"
+                        } else {
+                            "WAVE 3!"
+                        };
+                        self.fx.handle(
+                            FxKind::Toast { text: toast },
+                            &mut self.world.rng,
+                        );
+                        if sfx_count < 8 {
+                            outbound.push(GameEvent::Sfx(SfxId::WaveCue));
+                            sfx_count += 1;
+                        }
+                    }
+                    if group == content::flags::GRP_CAMP_W3 {
                         crate::save_data::set_flag(
                             &mut self.flags,
                             content::flags::GROUP_CAMP_GUARD,
                         );
+                        self.spawner.camp_war_won = true;
+                        self.spawner.locked_groups = vec![
+                            content::flags::GRP_CAMP_W2,
+                            content::flags::GRP_CAMP_W3,
+                        ];
                         self.fx.handle(
                             FxKind::Toast {
                                 text: "GUARDS CLEARED",
                             },
                             &mut self.world.rng,
                         );
+                        let save = save_from_game(self);
+                        if let Some(json) = save.to_json() {
+                            self.pending_save = Some(json);
+                        }
                     }
                 }
             }
@@ -538,6 +567,12 @@ fn integrate_non_player(world: &mut World) {
             | EntityKind::Octorok
             | EntityKind::Bat
             | EntityKind::OctorokRock
+            | EntityKind::RaiderSpear
+            | EntityKind::RaiderTorch
+            | EntityKind::Wisp
+            | EntityKind::Skeleton
+            | EntityKind::TorchProj
+            | EntityKind::TorchFlame
             | EntityKind::Sign
             | EntityKind::Npc
             | EntityKind::Chest

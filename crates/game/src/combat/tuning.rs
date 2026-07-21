@@ -131,3 +131,46 @@ pub const BOMB_DAMAGE: f32 = 2.0;
 pub const BOMB_PLAYER_DAMAGE: i32 = 2;
 pub const BOMB_KNOCKBACK: f32 = 3.0;
 pub const ITEM_TAP_MAX_TICKS: u16 = 8;
+
+// --- Act 1B enemies (Phase 2C-B) ---
+pub const RAIDER_SPEAR_HP: i32 = 4;
+pub const RAIDER_SPEAR_CONTACT: i32 = 1;
+pub const RAIDER_SPEAR_POKE: i32 = 2;
+pub const RAIDER_SPEAR_APPROACH: f32 = 26.0;
+pub const RAIDER_SPEAR_WALK: f32 = 0.55;
+pub const RAIDER_SPEAR_POKE_TELE: u16 = 25;
+pub const RAIDER_SPEAR_THRUST: u16 = 8;
+pub const RAIDER_SPEAR_GUARD: u16 = 30;
+pub const RAIDER_SPEAR_REACH: f32 = 20.0;
+
+pub const RAIDER_TORCH_HP: i32 = 3;
+pub const RAIDER_TORCH_CONTACT: i32 = 1;
+pub const RAIDER_TORCH_KEEP_MIN: f32 = 60.0;
+pub const RAIDER_TORCH_KEEP_MAX: f32 = 110.0;
+pub const RAIDER_TORCH_WALK: f32 = 0.5;
+pub const RAIDER_TORCH_TELE: u16 = 30;
+pub const RAIDER_TORCH_COOLDOWN: u16 = 90;
+pub const TORCH_PROJ_SPEED: f32 = 2.2;
+pub const TORCH_PROJ_LIFE: u16 = 40;
+pub const TORCH_FLAME_LIFE: u16 = 90;
+pub const TORCH_FLAME_TICK: u16 = 30;
+pub const TORCH_FLAME_DAMAGE: i32 = 1;
+
+pub const WISP_HP: i32 = 2;
+pub const WISP_CONTACT: i32 = 1;
+pub const WISP_DRIFT: f32 = 0.5;
+pub const WISP_VISIBLE: u16 = 90;
+pub const WISP_FADE_TELE: u16 = 40;
+pub const WISP_PHASED: u16 = 60;
+pub const WISP_REAPPEAR_MAX: f32 = 60.0;
+pub const WISP_REAPPEAR_MIN: f32 = 12.0;
+
+pub const SKELETON_HP: i32 = 4;
+pub const SKELETON_CONTACT: i32 = 1;
+pub const SKELETON_POKE: i32 = 2;
+pub const SKELETON_WALK: f32 = 0.45;
+pub const SKELETON_POKE_RANGE: f32 = 28.0;
+pub const SKELETON_POKE_TELE: u16 = 20;
+pub const SKELETON_LUNGE: u16 = 10;
+pub const SKELETON_POKE_STAGGER: u16 = 40;
+pub const SKELETON_PERFECT_STAGGER: u16 = 60;

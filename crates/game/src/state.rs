@@ -89,7 +89,7 @@ pub fn switch_map(game: &mut Game, target: MapId, entry: u8) {
     let mut world = World::new(target, map, spawn);
     world.checkpoint = persist.checkpoint;
     apply_persist(&mut world, &persist);
-    let mut spawner = Spawner::populate(&mut world);
+    let mut spawner = Spawner::populate(&mut world, &persist.flags);
     spawner.apply_save(&mut world, persist.gems, &persist.flags);
     crate::puzzle::paint_closed(&mut world, target, &persist.flags);
     if target == MapId::Overworld {

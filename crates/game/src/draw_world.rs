@@ -291,79 +291,11 @@ fn visible_chunk_range(map: &content::maps::MapDef, cam: crate::math::Vec2) -> (
 }
 
 pub fn render_entity(d: &mut Draw, e: &Entity, sprites: &SpriteMap) {
+    if crate::draw_enemies::try_render_enemy(d, e, sprites) {
+        return;
+    }
     match e.kind {
         EntityKind::Player => render_player(d, e, sprites),
-        EntityKind::Dummy => {
-            if let EntityData::Dummy(dd) = &e.data {
-                if dd.dead_ticks.is_some() {
-                    return;
-                }
-            }
-            let flash = e.health.map(|h| h.flash > 0).unwrap_or(false);
-            if flash && e.health.unwrap().flash.is_multiple_of(2) {
-                return;
-            }
-            if let Some(h) = sprites.get("slime_dummy") {
-                let frame = ((e.anim.timer / 16) % 2) as u32;
-                d.sprite(h, frame, e.pos.x, e.pos.y, false);
-            }
-        }
-        EntityKind::Slime => {
-            if e.body.is_none() {
-                d.circle(e.pos.x + 8.0, e.pos.y + 8.0, 6.0, "rgba(120,220,140,0.35)");
-                return;
-            }
-            let flash = e.health.map(|h| h.flash > 0).unwrap_or(false);
-            if flash && e.health.unwrap().flash.is_multiple_of(2) {
-                return;
-            }
-            let angry = e.health.map(|h| h.hp <= 1).unwrap_or(false);
-            let key = if angry { "slime_angry" } else { "slime" };
-            if let Some(h) = sprites.get(key) {
-                d.sprite(h, e.anim.frame as u32, e.pos.x, e.pos.y, false);
-            }
-        }
-        EntityKind::Bat => {
-            if e.body.is_none() {
-                d.circle(e.pos.x + 8.0, e.pos.y + 8.0, 5.0, "rgba(160,120,200,0.35)");
-                return;
-            }
-            let flash = e.health.map(|h| h.flash > 0).unwrap_or(false);
-            if flash && e.health.unwrap().flash.is_multiple_of(2) {
-                return;
-            }
-            if let Some(h) = sprites.get("bat") {
-                d.sprite(h, e.anim.frame as u32, e.pos.x, e.pos.y, e.facing == Dir4::Left);
-            }
-        }
-        EntityKind::Octorok => {
-            if e.body.is_none() {
-                d.circle(e.pos.x + 8.0, e.pos.y + 8.0, 6.0, "rgba(220,120,80,0.35)");
-                return;
-            }
-            let flash = e.health.map(|h| h.flash > 0).unwrap_or(false);
-            if flash && e.health.unwrap().flash.is_multiple_of(2) {
-                return;
-            }
-            if let Some(h) = sprites.get("octorok") {
-                d.sprite(
-                    h,
-                    e.anim.frame as u32,
-                    e.pos.x,
-                    e.pos.y,
-                    e.facing == Dir4::Left,
-                );
-            }
-        }
-        EntityKind::OctorokRock => {
-            let key = match &e.data {
-                EntityData::Rock(r) if r.from_player => "octorok_rock_warm",
-                _ => "octorok_rock",
-            };
-            if let Some(h) = sprites.get(key) {
-                d.sprite(h, e.anim.frame as u32, e.pos.x, e.pos.y, false);
-            }
-        }
         EntityKind::Pickup => {
             if let EntityData::Pickup(pd) = &e.data {
                 if pd.life < crate::combat::tuning::PICKUP_BLINK && (pd.life / 4) % 2 == 0 {
@@ -458,6 +390,18 @@ pub fn render_entity(d: &mut Draw, e: &Entity, sprites: &SpriteMap) {
                 d.rect(e.pos.x + 2.0, e.pos.y + 2.0, 12.0, 12.0, "#202830");
             }
         }
+        // Drawn in `draw_enemies::try_render_enemy`.
+        EntityKind::Dummy
+        | EntityKind::Slime
+        | EntityKind::Bat
+        | EntityKind::Octorok
+        | EntityKind::OctorokRock
+        | EntityKind::RaiderSpear
+        | EntityKind::RaiderTorch
+        | EntityKind::Wisp
+        | EntityKind::Skeleton
+        | EntityKind::TorchProj
+        | EntityKind::TorchFlame => {}
     }
 }
 

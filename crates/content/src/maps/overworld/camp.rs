@@ -110,20 +110,19 @@ pub fn paint(map: &mut MapDef) {
         ty: 94,
     });
 
-    // Dense clusters around bonfires (~16) + war-chest guard group 41 (6-pack).
+    // Raider camp around bonfires + a few bat harassers.
     for (tx, ty, kind) in [
-        (188u32, 72, SpawnKind::Slime),
-        (192, 68, SpawnKind::Slime),
+        (188u32, 72, SpawnKind::RaiderSpear),
+        (192, 68, SpawnKind::RaiderTorch),
         (186, 66, SpawnKind::Bat),
-        (208, 62, SpawnKind::Slime),
-        (212, 58, SpawnKind::Bat),
-        (214, 64, SpawnKind::Slime),
-        (198, 82, SpawnKind::Slime),
+        (212, 58, SpawnKind::RaiderSpear),
+        (214, 64, SpawnKind::RaiderTorch),
+        (198, 82, SpawnKind::RaiderSpear),
         (202, 78, SpawnKind::Bat),
-        (196, 76, SpawnKind::Slime),
+        (196, 76, SpawnKind::RaiderTorch),
         (178, 60, SpawnKind::Bat),
-        (220, 70, SpawnKind::Slime),
-        (175, 80, SpawnKind::Slime),
+        (220, 70, SpawnKind::RaiderSpear),
+        (175, 80, SpawnKind::RaiderTorch),
     ] {
         map.spawns.push(SpawnDef {
             tx,
@@ -132,19 +131,49 @@ pub fn paint(map: &mut MapDef) {
             group: flags::GRP_CAMP,
         });
     }
+    // War-chest wave 1 (group 41): 3 spears + 2 bats + 1 torch.
     for (tx, ty, kind) in [
-        (200u32, 58, SpawnKind::Slime),
-        (206, 58, SpawnKind::Slime),
+        (200u32, 58, SpawnKind::RaiderSpear),
+        (206, 58, SpawnKind::RaiderSpear),
+        (198, 61, SpawnKind::RaiderSpear),
         (200, 64, SpawnKind::Bat),
         (206, 64, SpawnKind::Bat),
-        (198, 61, SpawnKind::Slime),
-        (208, 61, SpawnKind::Slime),
+        (208, 61, SpawnKind::RaiderTorch),
     ] {
         map.spawns.push(SpawnDef {
             tx,
             ty,
             kind,
             group: flags::GRP_CAMP_GUARD,
+        });
+    }
+    // Wave 2 (42): 2 spears + 2 torches — locked until 41 clears.
+    for (tx, ty, kind) in [
+        (199u32, 56, SpawnKind::RaiderSpear),
+        (207, 56, SpawnKind::RaiderSpear),
+        (199, 66, SpawnKind::RaiderTorch),
+        (207, 66, SpawnKind::RaiderTorch),
+    ] {
+        map.spawns.push(SpawnDef {
+            tx,
+            ty,
+            kind,
+            group: flags::GRP_CAMP_W2,
+        });
+    }
+    // Wave 3 (43): 3 spears + 1 torch + 1 skeleton veteran.
+    for (tx, ty, kind) in [
+        (198u32, 57, SpawnKind::RaiderSpear),
+        (203, 55, SpawnKind::RaiderSpear),
+        (208, 57, SpawnKind::RaiderSpear),
+        (203, 65, SpawnKind::RaiderTorch),
+        (205, 62, SpawnKind::Skeleton),
+    ] {
+        map.spawns.push(SpawnDef {
+            tx,
+            ty,
+            kind,
+            group: flags::GRP_CAMP_W3,
         });
     }
 }

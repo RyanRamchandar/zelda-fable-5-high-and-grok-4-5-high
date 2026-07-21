@@ -4,7 +4,9 @@ use crate::combat::style::{self, StyleVerb};
 use crate::combat::tuning;
 use crate::fx::FxKind;
 use crate::math::Vec2;
-use crate::world::entity::{layer, EntityData, EntityId, EntityKind, Health, OctorokState};
+use crate::world::entity::{
+    layer, EntityData, EntityId, EntityKind, Health, OctorokState, RaiderSpearState,
+};
 use crate::world::{AttackKind, World, WorldEvent};
 use content::audio::sfx::SfxId;
 
@@ -17,7 +19,7 @@ pub fn apply_attack_hit(
     damage: f32,
     knockback: f32,
 ) {
-    let hidden = {
+    let refuse = {
         let Some(entity) = world.get(target) else {
             return;
         };
@@ -34,19 +36,37 @@ pub fn apply_attack_hit(
             EntityData::Octorok(d)
                 if d.spawn_telegraph == 0 && d.state == OctorokState::Hide
         );
-        if entity.health.map(|h| h.iframes > 0).unwrap_or(true) && !hidden {
+        let frontal = entity.facing.unit().dot(dir.normalize_or_zero()) > 0.35;
+        let guarded = match &entity.data {
+            EntityData::RaiderSpear(d)
+                if d.spawn_telegraph == 0 && d.state == RaiderSpearState::Guard && frontal =>
+            {
+                true
+            }
+            EntityData::Skeleton(d) if d.spawn_telegraph == 0 && d.shield_up && frontal => true,
+            _ => false,
+        };
+        if entity.health.map(|h| h.iframes > 0).unwrap_or(true) && !hidden && !guarded {
             return;
         }
-        hidden
+        if hidden || guarded {
+            Some(if guarded {
+                SfxId::GuardClank
+            } else {
+                SfxId::Refused
+            })
+        } else {
+            None
+        }
     };
-    if hidden {
+    if let Some(sfx) = refuse {
         if let Some(e) = world.get_mut(target) {
             if let Some(h) = e.health.as_mut() {
                 h.flash = tuning::FLASH_TICKS;
             }
         }
         world.push_event(WorldEvent::FxRequest(FxKind::BlockSpark { pos }));
-        world.push_event(WorldEvent::Sfx(SfxId::Refused));
+        world.push_event(WorldEvent::Sfx(sfx));
         return;
     }
 
@@ -125,8 +145,13 @@ pub fn apply_attack_hit(
     }
 }
 
-/// Player damage from enemy contact / projectiles (1B enemies + 1A debug shot).
-pub fn apply_player_damage(world: &mut World, amount: i32, dir: Vec2) {
+/// Player damage from enemy contact / projectiles.
+pub fn apply_player_damage(
+    world: &mut World,
+    amount: i32,
+    dir: Vec2,
+    source: Option<EntityId>,
+) {
     let pid = world.player_id;
     let (iframes, shield_held, shield_ticks, facing, center) = {
         let Some(p) = world.get(pid) else {
@@ -171,6 +196,14 @@ pub fn apply_player_damage(world: &mut World, amount: i32, dir: Vec2) {
             world.push_event(WorldEvent::StyleAction(StyleVerb::PerfectBlock));
             world.push_event(WorldEvent::Sfx(SfxId::PerfectBlock));
             reflect_projectiles_near(world, center);
+            if let Some(src) = source {
+                if matches!(
+                    world.get(src).map(|e| e.kind),
+                    Some(EntityKind::Skeleton)
+                ) {
+                    crate::enemies::skeleton::try_perfect_block_stagger(world, src);
+                }
+            }
         } else {
             world.push_event(WorldEvent::Sfx(SfxId::ShieldBlock));
             destroy_hostile_projectiles_near(world, center);
@@ -248,6 +281,12 @@ fn reflect_projectiles_near(world: &mut World, center: Vec2) {
             | EntityKind::Slime
             | EntityKind::Bat
             | EntityKind::Octorok
+            | EntityKind::RaiderSpear
+            | EntityKind::RaiderTorch
+            | EntityKind::Wisp
+            | EntityKind::Skeleton
+            | EntityKind::TorchProj
+            | EntityKind::TorchFlame
             | EntityKind::Sign
             | EntityKind::Npc
             | EntityKind::Chest
@@ -267,6 +306,7 @@ fn destroy_hostile_projectiles_near(world: &mut World, center: Vec2) {
         let hostile = match e.kind {
             EntityKind::OctorokRock => matches!(&e.data, EntityData::Rock(r) if !r.from_player),
             EntityKind::DebugShot => matches!(&e.data, EntityData::Beam(b) if !b.from_player),
+            EntityKind::TorchProj => true,
             EntityKind::SwordBeam => false,
             _ => false,
         };

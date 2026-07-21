@@ -1,6 +1,7 @@
 //! Indexed-color sprite/tile grids → baked by `game::assets` into `engine::atlas`.
 
 pub mod enemies;
+pub mod enemies_act1b;
 pub mod npcs;
 pub mod palette;
 pub mod player_actions;
@@ -81,6 +82,12 @@ pub fn all_bakes() -> Vec<SpriteBake> {
             swap: Some(&palette::ROCK_WARM),
             key: "octorok_rock_warm",
         },
+        bake(&enemies_act1b::RAIDER_SPEAR),
+        bake(&enemies_act1b::RAIDER_TORCH),
+        bake(&enemies_act1b::WISP),
+        bake(&enemies_act1b::SKELETON),
+        bake(&enemies_act1b::TORCH_PROJ),
+        bake(&enemies_act1b::TORCH_FLAME),
         // Arena / interior legacy tiles
         bake(&tiles::TILE_FLOOR_A),
         bake(&tiles::TILE_FLOOR_B),

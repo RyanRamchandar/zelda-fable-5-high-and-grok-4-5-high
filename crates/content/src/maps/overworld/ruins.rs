@@ -134,20 +134,22 @@ pub fn paint(map: &mut MapDef) {
         ty: 150,
     });
 
-    // Octorok lanes + bats (~12).
+    // Octorok lanes + wisps in colonnades + skeletons near plate court (~14).
     for (tx, ty, kind) in [
         (170u32, 125, SpawnKind::Octorok),
         (180, 125, SpawnKind::Octorok),
-        (200, 135, SpawnKind::Bat),
         (210, 145, SpawnKind::Octorok),
-        (185, 155, SpawnKind::Bat),
         (205, 155, SpawnKind::Octorok),
-        (175, 170, SpawnKind::Bat),
         (220, 140, SpawnKind::Octorok),
-        (195, 120, SpawnKind::Bat),
         (165, 150, SpawnKind::Octorok),
-        (215, 160, SpawnKind::Bat),
         (200, 170, SpawnKind::Octorok),
+        (200, 135, SpawnKind::Wisp),
+        (185, 155, SpawnKind::Wisp),
+        (195, 120, SpawnKind::Wisp),
+        (215, 160, SpawnKind::Wisp),
+        (175, 170, SpawnKind::Bat),
+        (192, 148, SpawnKind::Skeleton),
+        (204, 152, SpawnKind::Skeleton),
     ] {
         map.spawns.push(SpawnDef {
             tx,

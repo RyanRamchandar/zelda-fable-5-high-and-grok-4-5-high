@@ -84,13 +84,13 @@ pub fn paint(map: &mut MapDef) {
         ty: 22,
     });
 
-    // Soft-gate sentinels framing the road (groups away from CP).
+    // Soft-gate sentinels: skeleton + raider spear per side (still runnable).
     for (tx, ty, kind) in [
-        (108u32, 28, SpawnKind::Octorok),
-        (106, 26, SpawnKind::Slime),
+        (108u32, 28, SpawnKind::Skeleton),
+        (106, 26, SpawnKind::RaiderSpear),
         (110, 30, SpawnKind::Bat),
-        (132, 28, SpawnKind::Octorok),
-        (134, 26, SpawnKind::Slime),
+        (132, 28, SpawnKind::Skeleton),
+        (134, 26, SpawnKind::RaiderSpear),
         (130, 30, SpawnKind::Bat),
     ] {
         map.spawns.push(SpawnDef {

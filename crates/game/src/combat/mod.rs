@@ -114,6 +114,12 @@ pub fn resolve_hits(world: &mut World) {
                 | EntityKind::Slime
                 | EntityKind::Bat
                 | EntityKind::Octorok
+                | EntityKind::RaiderSpear
+                | EntityKind::RaiderTorch
+                | EntityKind::Wisp
+                | EntityKind::Skeleton
+                | EntityKind::TorchProj
+                | EntityKind::TorchFlame
                 | EntityKind::Sign
                 | EntityKind::Npc
                 | EntityKind::Chest
@@ -172,6 +178,7 @@ pub fn resolve_hits(world: &mut World) {
                 world.push_event(WorldEvent::DamagedPlayer {
                     amount: damage.ceil() as i32,
                     dir: knock_dir,
+                    source: Some(id),
                 });
             }
         }
@@ -203,8 +210,12 @@ pub fn route_combat_events(world: &mut World, events: Vec<WorldEvent>) -> Vec<Wo
             } => {
                 apply_attack_hit(world, target, attack, dir, pos, damage, knockback);
             }
-            WorldEvent::DamagedPlayer { amount, dir } => {
-                apply_player_damage(world, amount, dir);
+            WorldEvent::DamagedPlayer {
+                amount,
+                dir,
+                source,
+            } => {
+                apply_player_damage(world, amount, dir, source);
             }
             other => rest.push(other),
         }

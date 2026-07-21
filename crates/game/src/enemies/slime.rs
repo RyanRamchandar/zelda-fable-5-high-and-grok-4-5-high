@@ -170,6 +170,7 @@ pub fn update_one(world: &mut World, id: EntityId) {
                 world.push_event(WorldEvent::DamagedPlayer {
                     amount: tuning::SLIME_CONTACT,
                     dir,
+                    source: Some(id),
                 });
             }
         }

@@ -375,3 +375,36 @@ of elder→3 gems→seal before 2C polish pass.
 
 ### Ready for 2C-B?
 **YES** — 2C-A completion entry is this section. Residual risks: human feel on chime window / block push latency / tap-vs-shield; plate court push lanes vs column clutter; gamepad LB/RB cycle untested on hardware; camp barricades are cover previews only (wave chain is 2C-B).
+
+## Phase 2C-B completion — 2026-07-21 (Grok 4.5 High Fast worker)
+
+### Gate
+Read Phase 2C-A completion + frozen seams (puzzle API, BUTTON_CYCLE, AttackKind::Bomb, barricade path, flags 90–99, bomb persist fields, GemData.sealed / shop / Bomb). Honored; no 2C-A puzzle/shop rework beyond enemy wiring.
+
+### What landed (M1–M4)
+- **M1 families**: `content::art::enemies_act1b` (raider spear/torch, wisp, skeleton, torch proj/flame); `game::enemies::{raider,wisp,skeleton}`; SpawnKind/EntityKind/EntityData + exhaustive match sweep; SFX `RaiderPoke`/`GuardClank`/`TorchThrow`/`FlameBurst`/`WispPhase`/`SkeletonRattle`; tuning rows; front-guard refuse (spear Guard + skeleton shield); `DamagedPlayer.source: Option<EntityId>`; skeleton perfect-block stagger + pub `skeleton::stagger` Phase 3 hook.
+- **M2 camp waves**: `GRP_CAMP_W2=42` / `GRP_CAMP_W3=43` + `CAMP_WAVE_CHAIN`; spawner `locked_groups` + `camp_war_won`; GroupCleared 41→42→43 unlock/force-spawn + WaveCue toasts; clear 43 → `GROUP_CAMP_GUARD` + checkpoint save; power-chest fallback uses group 43; mid-chain rewind guard + chain reset on wave-1 respawn.
+- **M3 re-dress**: camp raiders+bats; ruins octoroks+wisps+skeletons near plates; cliffs +1 summit wisp; shrine sentinels skeleton+spear/side.
+- **M4 feel**: defaults within ±0 (no tuning log needed after smoke); `draw_enemies` extract (draw_world 509).
+
+### Phase 3 inherits
+- Puzzle hit-check API + crank/chime/barricade seams (2C-A)
+- `BUTTON_CYCLE` / B-item selected_item u8 (boomerang=2)
+- `skeleton::stagger` + perfect-block source plumb
+- `TUNIC_UNLOCKED=98` + ruins far-switch / `CHEST_RUINS_BONUS` site
+- Camp wave chain pattern (`locked_groups` + `CAMP_WAVE_CHAIN`)
+
+### Verification
+- `cargo check` + `clippy -D warnings` (wasm32) clean
+- `env -u NO_COLOR trunk build --release` ok
+- Playwright vs `python3 -m http.server 8090 --directory dist` (`/tmp/p2c_b_smoke/`): boot OW, F1 ~60 fps, save v2, F3 Arena intact; **http.server + headless_shell killed**
+- File caps: lib 591, draw_world 509, draw_enemies 168, raider 491, spawner 352
+
+### Deviations / risks
+- Human feel pass still owed: wave-2/3 spike, wisp annoyance, spear guard readability, torch arc aim.
+- Smoke F4 entry cycle landed shrine pocket (not camp clearing) — camp wave chain verified by code path + placement; recommend human camp break-in.
+- Gamepad still untested on hardware.
+
+### Ready for Fable Phase 3 briefs?
+**YES** — Phase 2C overall (2C-A + 2C-B) complete. Soft critical path has real gem gates + bombs/shop + four Act 1B families + camp 3-wave war-chest.
+

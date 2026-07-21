@@ -46,6 +46,8 @@ pub enum WorldEvent {
     DamagedPlayer {
         amount: i32,
         dir: Vec2,
+        /// Attacker id when known (skeleton perfect-block stagger).
+        source: Option<EntityId>,
     },
     Killed {
         #[allow(dead_code)]

@@ -122,7 +122,7 @@ pub fn paint(map: &mut MapDef) {
         ty: 88,
     });
 
-    // Octoroks on upper bands, slimes on landings (~12).
+    // Octorok showcase + one summit wisp (~12).
     for (tx, ty, kind) in [
         (95u32, 55, SpawnKind::Octorok),
         (100, 35, SpawnKind::Octorok),
@@ -135,7 +135,7 @@ pub fn paint(map: &mut MapDef) {
         (140, 75, SpawnKind::Slime),
         (90, 80, SpawnKind::Bat),
         (120, 48, SpawnKind::Bat),
-        (100, 72, SpawnKind::Slime),
+        (100, 30, SpawnKind::Wisp),
     ] {
         map.spawns.push(SpawnDef {
             tx,

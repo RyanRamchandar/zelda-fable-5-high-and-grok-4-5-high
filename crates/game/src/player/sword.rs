@@ -321,6 +321,12 @@ pub fn update_beams(world: &mut World) {
                 | EntityKind::Bat
                 | EntityKind::Octorok
                 | EntityKind::OctorokRock
+                | EntityKind::RaiderSpear
+                | EntityKind::RaiderTorch
+                | EntityKind::Wisp
+                | EntityKind::Skeleton
+                | EntityKind::TorchProj
+                | EntityKind::TorchFlame
                 | EntityKind::Sign
                 | EntityKind::Npc
                 | EntityKind::Chest

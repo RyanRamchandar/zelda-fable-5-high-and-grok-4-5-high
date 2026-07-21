@@ -24,6 +24,12 @@ pub enum EntityKind {
     Bat,
     Octorok,
     OctorokRock,
+    RaiderSpear,
+    RaiderTorch,
+    Wisp,
+    Skeleton,
+    TorchProj,
+    TorchFlame,
     Sign,
     Npc,
     Chest,
@@ -76,6 +82,12 @@ pub enum EntityData {
     Bat(BatData),
     Octorok(OctorokData),
     Rock(RockData),
+    RaiderSpear(RaiderSpearData),
+    RaiderTorch(RaiderTorchData),
+    Wisp(WispData),
+    Skeleton(SkeletonData),
+    TorchProj(TorchProjData),
+    TorchFlame(TorchFlameData),
     Sign(SignData),
     Npc(NpcData),
     Chest(ChestData),
@@ -298,6 +310,84 @@ pub struct RockData {
     pub swing_id: u32,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum RaiderSpearState {
+    Idle,
+    Approach,
+    PokeTelegraph,
+    Thrust,
+    Guard,
+}
+
+#[derive(Clone, Debug)]
+pub struct RaiderSpearData {
+    pub spawn_telegraph: u16,
+    pub state: RaiderSpearState,
+    pub timer: u16,
+    pub patrol_phase: f32,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum RaiderTorchState {
+    Idle,
+    ThrowTelegraph,
+    Cooldown,
+}
+
+#[derive(Clone, Debug)]
+pub struct RaiderTorchData {
+    pub spawn_telegraph: u16,
+    pub state: RaiderTorchState,
+    pub timer: u16,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum WispState {
+    Visible,
+    FadeOut,
+    Phased,
+    FadeIn,
+}
+
+#[derive(Clone, Debug)]
+pub struct WispData {
+    pub spawn_telegraph: u16,
+    pub state: WispState,
+    pub timer: u16,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SkeletonState {
+    Walk,
+    PokeTelegraph,
+    Lunge,
+    Stagger,
+}
+
+#[derive(Clone, Debug)]
+pub struct SkeletonData {
+    pub spawn_telegraph: u16,
+    pub state: SkeletonState,
+    pub timer: u16,
+    pub shield_up: bool,
+    /// Remaining stagger duration when entering `Stagger`.
+    pub stagger_len: u16,
+}
+
+#[derive(Clone, Debug)]
+pub struct TorchProjData {
+    pub dir: Vec2,
+    pub life: u16,
+    pub age: u16,
+    pub hit: bool,
+}
+
+#[derive(Clone, Debug)]
+pub struct TorchFlameData {
+    pub life: u16,
+    pub tick: u16,
+}
+
 #[derive(Clone, Debug)]
 pub struct Entity {
     pub kind: EntityKind,
@@ -495,7 +585,14 @@ impl Entity {
     pub fn is_enemy(&self) -> bool {
         matches!(
             self.kind,
-            EntityKind::Slime | EntityKind::Bat | EntityKind::Octorok | EntityKind::Dummy
+            EntityKind::Slime
+                | EntityKind::Bat
+                | EntityKind::Octorok
+                | EntityKind::RaiderSpear
+                | EntityKind::RaiderTorch
+                | EntityKind::Wisp
+                | EntityKind::Skeleton
+                | EntityKind::Dummy
         )
     }
 }

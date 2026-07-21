@@ -175,7 +175,7 @@ fn open_chest(game: &mut Game, id: crate::world::EntityId) -> Option<String> {
         // Power gem chest locked until guard group cleared.
         if flag_is_power_chest(cd.flag)
             && !has_flag(&game.flags, save_flags::GROUP_CAMP_GUARD)
-            && !crate::world::spawner::group_cleared(&game.spawner, 41)
+            && !crate::world::spawner::group_cleared(&game.spawner, 43)
         {
             game.ui.dialog.open_text(TextId::PowerChestLocked);
             return None;

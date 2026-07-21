@@ -51,6 +51,13 @@ pub enum SfxId {
     BombBoom,
     BuyItem,
     ItemCycle,
+    // Phase 2C-B enemies
+    RaiderPoke,
+    GuardClank,
+    TorchThrow,
+    FlameBurst,
+    WispPhase,
+    SkeletonRattle,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -122,6 +129,12 @@ pub fn spec(id: SfxId) -> SfxSpec {
         SfxId::BombBoom => noise(80.0, 30.0, 0.01, 0.22, 0.22, 0.9),
         SfxId::BuyItem => sine(520.0, 880.0, 0.01, 0.12, 0.12),
         SfxId::ItemCycle => square(440.0, 660.0, 0.005, 0.06, 0.1),
+        SfxId::RaiderPoke => saw(280.0, 160.0, 0.01, 0.1, 0.16),
+        SfxId::GuardClank => square(200.0, 140.0, 0.005, 0.08, 0.14),
+        SfxId::TorchThrow => saw(360.0, 180.0, 0.01, 0.12, 0.14),
+        SfxId::FlameBurst => noise(140.0, 60.0, 0.01, 0.14, 0.16, 0.75),
+        SfxId::WispPhase => sine(720.0, 420.0, 0.02, 0.16, 0.12),
+        SfxId::SkeletonRattle => noise(180.0, 90.0, 0.01, 0.1, 0.12, 0.55),
     }
 }
 

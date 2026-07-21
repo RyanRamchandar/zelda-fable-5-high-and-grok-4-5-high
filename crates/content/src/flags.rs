@@ -58,6 +58,12 @@ pub const GRP_MEADOW: u16 = 10;
 pub const GRP_GROVE: u16 = 30;
 pub const GRP_CAMP: u16 = 40;
 pub const GRP_CAMP_GUARD: u16 = 41;
+/// Camp war-chest wave 2 / 3 (chained from 41).
+pub const GRP_CAMP_W2: u16 = 42;
+pub const GRP_CAMP_W3: u16 = 43;
 pub const GRP_RUINS: u16 = 50;
 pub const GRP_CLIFFS: u16 = 60;
 pub const GRP_SHRINE: u16 = 70;
+
+/// Spawner wave unlock chain: clear `from` → unlock + force-spawn `to`.
+pub const CAMP_WAVE_CHAIN: [(u16, u16); 2] = [(41, 42), (42, 43)];
