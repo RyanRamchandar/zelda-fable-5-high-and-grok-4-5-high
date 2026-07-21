@@ -339,3 +339,39 @@ of elder→3 gems→seal before 2C polish pass.
   seam, and skeleton stagger hook, so writing them now would repeat the
   ARCHITECTURE-vs-reality drift we've avoided by briefing against real code.
   PHASE_PLAN Phase 2/3 sections updated accordingly.
+
+## Phase 2C-A completion — 2026-07-21 (Grok 4.5 High Fast worker)
+
+### Drift vs brief §1
+- Brief assumed HEAD `ea4edd9` (phase2b); actual start was `b813946` (phase2c-plan). Code + 2B notes still matched §1 facts; no behavioral drift.
+- Added `PUZZLE_RUINS_FAR = 99` (beyond 90–98) so the ruins far-switch gate restores on load; chest loot flag remains `CHEST_RUINS_BONUS = 20`.
+- `T_BRIDGE_LOWERED` uses a darker plank sprite (`prop_bridge_lowered`), not a palette-row reuse of `bridge_h`.
+
+### What landed (M1–M5)
+- **M1**: `game::debug` extract (`lib.rs` 556); catalog tiles 260–266 + `props_puzzle` art; `content::puzzles`; `game::puzzle` (paint/restore/update after `integrate_non_player`, before `resolve_hits`); flags 90–99; SFX appends.
+- **M2**: Grove teaching chime gates + finale seal on Courage gem (`GemData.sealed`); ruins plate court fence + blocks/plates + far-switch crank/chest; Courage sealed interact text.
+- **M3**: `BUTTON_CYCLE` (Q / LB+RB); tap-K bombs / hold-K shield; `EntityKind::Bomb` + `AttackKind::Bomb`; bomb wall → `Cave(2)` + 100₹ chest; F1+H debug bomb grant retained.
+- **M4**: `game::ui::shop` stock (bombs×5 / bag / heart #4 / locked tunic); persist via flags + `pending_save`.
+- **M5**: Broken-bridge crank at (67,91) → lowered planks; camp barricade previews.
+
+### Economy math (WORKER_NOTES)
+- Sources ≈ 5+20+25+30+50+50 + **100** (bomb cave) + **50** (ruins far, gated) + kill drops (~17%).
+- Sinks: 10×n bomb restocks + 100 bag + 200 heart. A player clearing ~6/10 secrets can afford bag + heart + ~10 restocks without grind. No cache ±30% needed.
+
+### Verification
+- `cargo check` + `clippy -D warnings` (wasm32) clean
+- `env -u NO_COLOR trunk build --release` ok
+- Playwright vs `python3 -m http.server 8090 --directory dist` (`/tmp/p2c_a_smoke/`): boot OW, F1+H grants bombs (`bomb_cap:10`), tap-K places (count 9), save v2 fields present, F3 Arena ok; **http.server + headless_shell killed**
+- File caps: lib 556, puzzle/mod 552, interact 427, draw_world 565, state 356
+
+### Frozen seams for 2C-B (do not break)
+1. `game::puzzle` API: `PuzzleState::for_map`, `paint_closed`, `restore`, `update`, `try_open_bomb_wall`, `bomb_break_barricades` + `content::puzzles` shapes (`OverworldPuzzles` / def structs / `for_map`)
+2. `BUTTON_CYCLE` (=6), `BUTTON_COUNT` (=7) — touch item parity still Phase 4
+3. `AttackKind::Bomb` (no style verb)
+4. Barricade break path (`puzzle::barricades::damage_barricade` / bomb radius)
+5. Flags **90–98** (+ `99` ruins far; `CHEST_RUINS_BONUS=20`; `TUNIC_UNLOCKED=98` reserved)
+6. `SaveGame` / `PlayerPersist` fields: `bombs`, `bomb_cap`, `selected_item` (`#[serde(default)]`, version stays 2)
+7. `GemData.sealed` (Courage); shop `UiState.shop`; bomb entity kind
+
+### Ready for 2C-B?
+**YES** — 2C-A completion entry is this section. Residual risks: human feel on chime window / block push latency / tap-vs-shield; plate court push lanes vs column clutter; gamepad LB/RB cycle untested on hardware; camp barricades are cover previews only (wave chain is 2C-B).
