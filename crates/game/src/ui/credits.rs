@@ -1,6 +1,7 @@
-//! Act 1 credits stub — auto-scroll, hold Attack to skip.
+//! Act 1 credits — auto-scroll; R/Confirm or hold Attack to skip.
 
-use engine::input::{InputState, BUTTON_ATTACK};
+use content::text::{self, TextId};
+use engine::input::{InputState, BUTTON_ATTACK, BUTTON_CONFIRM};
 use engine::render::Draw;
 
 const SCROLL_SPEED: f32 = 0.4;
@@ -38,7 +39,8 @@ impl CreditsState {
         } else {
             self.hold = 0;
         }
-        if self.hold >= SKIP_HOLD || self.scroll > 420.0 {
+        let confirm_skip = input.buttons[BUTTON_CONFIRM].pressed;
+        if confirm_skip || self.hold >= SKIP_HOLD || self.scroll > 420.0 {
             self.active = false;
             return true;
         }
@@ -65,7 +67,7 @@ impl CreditsState {
             }
             y += 16.0;
         }
-        d.text("HOLD ATTACK TO SKIP", 160.0, 252.0, "#606070");
+        d.text(text::line(TextId::CreditsSkipHint), 140.0, 252.0, "#606070");
     }
 }
 

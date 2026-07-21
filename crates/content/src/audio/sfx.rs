@@ -86,6 +86,10 @@ pub enum SfxId {
     FakeFlash,
     WardenFall,
     PebbleSkitter,
+    // Phase 4 menus
+    MenuMove,
+    MenuConfirm,
+    MenuBack,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -189,6 +193,9 @@ pub fn spec(id: SfxId) -> SfxSpec {
         SfxId::FakeFlash => sine(440.0, 220.0, 0.01, 0.1, 0.1),
         SfxId::WardenFall => noise(70.0, 20.0, 0.02, 0.4, 0.24, 0.9),
         SfxId::PebbleSkitter => noise(220.0, 140.0, 0.005, 0.08, 0.1, 0.5),
+        SfxId::MenuMove => square(660.0, 720.0, 0.001, 0.04, 0.08),
+        SfxId::MenuConfirm => sine(520.0, 780.0, 0.01, 0.1, 0.12),
+        SfxId::MenuBack => square(400.0, 280.0, 0.005, 0.08, 0.1),
     }
 }
 

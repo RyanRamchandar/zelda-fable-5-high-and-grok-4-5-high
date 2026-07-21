@@ -44,6 +44,12 @@ use crate::world::{Spawner, World};
 pub enum GameEvent {
     Sfx(SfxId),
     Save(String),
+    SetMuted(bool),
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct Settings {
+    pub muted: bool,
 }
 
 pub struct Game {
@@ -56,7 +62,7 @@ pub struct Game {
     pub(crate) chunk_cache_reset: bool,
     pub(crate) fx: FxState,
     pub(crate) ui: UiState,
-    sprites: SpriteMap,
+    pub(crate) sprites: SpriteMap,
     tile_sprites: TileSprites,
     chunk_cache: Option<ChunkCache>,
     waves: WaveDirector,
@@ -71,10 +77,16 @@ pub struct Game {
     pub(crate) rooms: Option<rooms::RoomsState>,
     pub(crate) dungeon_puzzle: Option<puzzle::dungeon::DungeonPuzzleState>,
     pub(crate) boss: Option<boss::BossState>,
+    pub(crate) settings: Settings,
+    pub(crate) had_save: bool,
+    pub(crate) pending_muted: Option<bool>,
+    pub(crate) open_title_after_transition: bool,
+    muted_boot_sent: bool,
+    pub(crate) last_input: InputState,
 }
 
 impl Game {
-    pub fn new(save: SaveGame, sprites: SpriteMap) -> Self {
+    pub fn new(save: SaveGame, sprites: SpriteMap, boot_to_title: bool) -> Self {
         let tile_sprites = TileSprites::build(&sprites);
         let map_id = save.map_id();
         // Boot overworld at checkpoint entry (New Game = entry 0).
@@ -120,11 +132,16 @@ impl Game {
         ui.minimap.build_class_map(&world.map);
         ui.minimap.refresh_objective(save.gems, &save.flags);
 
+        let mode = if boot_to_title {
+            GameMode::Title
+        } else {
+            GameMode::Play
+        };
         let mut game = Self {
             world,
             spawner,
             current_map: map_id,
-            mode: GameMode::Play,
+            mode,
             gems: save.gems,
             flags: save.flags,
             chunk_cache_reset: true,
@@ -150,24 +167,44 @@ impl Game {
             rooms: None,
             dungeon_puzzle: None,
             boss: None,
+            settings: Settings {
+                muted: save.muted,
+            },
+            had_save: false,
+            pending_muted: Some(save.muted),
+            open_title_after_transition: false,
+            muted_boot_sent: false,
+            last_input: InputState::default(),
         };
         if map_id == MapId::Dungeon {
             rooms::on_enter_dungeon(&mut game);
+        }
+        if boot_to_title && ui::title::has_progress(&game) {
+            game.ui.title.cursor = 0; // CONTINUE first when present
         }
         game
     }
 
     pub fn from_storage_json(json: Option<String>, sprites: SpriteMap) -> Self {
-        let save = match json {
-            Some(s) => SaveGame::from_json(&s),
-            None => SaveGame::default_spawn(),
+        let (save, had_save) = match json {
+            Some(s) => match SaveGame::try_from_json(&s) {
+                Some(sg) => (sg, true),
+                None => (SaveGame::default_spawn(), false),
+            },
+            None => (SaveGame::default_spawn(), false),
         };
-        Self::new(save, sprites)
+        let mut game = Self::new(save, sprites, true);
+        game.had_save = had_save;
+        if had_save && ui::title::has_progress(&game) {
+            game.ui.title.cursor = 0;
+        }
+        game
     }
 
     pub fn update(&mut self, input: &InputState) -> Vec<GameEvent> {
         self.touch_active = input.touch_active;
         self.touch_overlay = input.touch_overlay.clone();
+        self.last_input = input.clone();
 
         if input.debug[DEBUG_OVERLAY].pressed {
             self.ui.debug_overlay = !self.ui.debug_overlay;
@@ -196,7 +233,17 @@ impl Game {
             return events::drain(self, input);
         }
 
-        // Dialog / pause-map / shop pause world sim (viewer pattern).
+        if matches!(self.mode, GameMode::Title) {
+            ui::title::update(self, input);
+            return events::drain(self, input);
+        }
+
+        // Pause routing before dialog/shop early-out.
+        if ui::pause::update(self, input) {
+            return events::drain(self, input);
+        }
+
+        // Dialog / shop pause world sim (viewer pattern).
         self.ui.minimap.update(
             input,
             &self.world,
@@ -204,7 +251,7 @@ impl Game {
             self.gems,
             &self.flags,
         );
-        if self.ui.dialog.open || self.ui.minimap.pause_open || self.ui.shop.open {
+        if self.ui.dialog.open || self.ui.shop.open {
             if self.ui.dialog.open {
                 self.ui.dialog.update(input, &mut self.world);
             }
@@ -399,17 +446,10 @@ impl Game {
         }
         self.ui.dialog.render(d, &self.sprites);
         ui::shop::render(d, &self.ui.shop, &self.flags);
-        if self.current_map == MapId::Dungeon && self.ui.minimap.pause_open {
-            ui::dungeon_map::render_pause(d, self);
-        } else {
-            self.ui.minimap.render_pause(
-                d,
-                &self.world,
-                &self.sprites,
-                self.current_map,
-                self.gems,
-                &self.flags,
-            );
+        ui::pause::render(d, self);
+
+        if matches!(self.mode, GameMode::Title) {
+            ui::title::render(d, self);
         }
 
         let alpha = fade_alpha(&self.mode);

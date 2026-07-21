@@ -11,6 +11,7 @@ use crate::world::{Spawner, World, WorldEvent};
 use crate::Game;
 
 pub enum GameMode {
+    Title,
     Play,
     Transition(Transition),
 }
@@ -193,7 +194,16 @@ pub fn tick_transition(game: &mut Game) {
         }
     }
     if t >= FADE_TICKS * 2 {
-        game.mode = GameMode::Play;
+        if game.open_title_after_transition {
+            game.open_title_after_transition = false;
+            game.mode = GameMode::Title;
+            game.ui.title.page = crate::ui::title::TitlePage::Chapters;
+            game.ui.title.chapter_cursor = 0;
+            game.ui.title.cursor = 0;
+            game.had_save = true;
+        } else {
+            game.mode = GameMode::Play;
+        }
     }
 }
 
@@ -240,6 +250,7 @@ pub fn save_from_game(game: &Game) -> SaveGame {
         bombs,
         bomb_cap,
         selected_item,
+        muted: game.settings.muted,
     }
 }
 

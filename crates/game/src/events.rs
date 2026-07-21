@@ -77,6 +77,13 @@ pub(crate) fn drain(game: &mut Game, _input: &InputState) -> Vec<GameEvent> {
     if let Some(json) = game.pending_save.take() {
         outbound.push(GameEvent::Save(json));
     }
+    if let Some(muted) = game.pending_muted.take() {
+        outbound.push(GameEvent::SetMuted(muted));
+        game.muted_boot_sent = true;
+    } else if !game.muted_boot_sent {
+        outbound.push(GameEvent::SetMuted(game.settings.muted));
+        game.muted_boot_sent = true;
+    }
 
     game.ticks = game.ticks.wrapping_add(1);
     game.ui.fps_accum = game.ui.fps_accum.wrapping_add(1);

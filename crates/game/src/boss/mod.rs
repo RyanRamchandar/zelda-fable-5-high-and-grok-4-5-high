@@ -331,7 +331,8 @@ fn ui_credits_tick(game: &mut Game, input: &InputState) -> bool {
 fn finish_credits_return(game: &mut Game) {
     game.ui.credits.active = false;
     clear(game);
-    // Return to village fountain.
+    // Return to village fountain, then land on title Chapters.
+    game.open_title_after_transition = true;
     crate::state::begin_transition(game, MapId::Overworld, village_fountain_entry());
     game.world.push_event(WorldEvent::FxRequest(FxKind::Toast {
         text: "ACT 1 COMPLETE",

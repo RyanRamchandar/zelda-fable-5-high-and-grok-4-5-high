@@ -19,6 +19,7 @@ pub mod tiles_water;
 pub mod props_dungeon;
 pub mod items;
 pub mod ui;
+pub mod ui_meta;
 
 use palette::PaletteSwap;
 
@@ -242,6 +243,8 @@ pub fn all_bakes() -> Vec<SpriteBake> {
         bake(&ui::UI_STYLE_CHIP),
         bake(&ui::UI_ITEM_SLOT),
         bake(&ui::UI_TOAST_PANEL),
+        bake(&ui_meta::TITLE_LOGO),
+        bake(&ui_meta::TOUCH_ICONS),
     ]
 }
 

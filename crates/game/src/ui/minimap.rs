@@ -3,7 +3,7 @@
 use content::maps::catalog::{self, TileInfo};
 use content::maps::{MapDef, MapId, TILE_PX};
 use content::text::TextId;
-use engine::input::{InputState, BUTTON_CONFIRM, BUTTON_PAUSE};
+use engine::input::InputState;
 use engine::render::Draw;
 
 use crate::assets::SpriteMap;
@@ -27,7 +27,6 @@ const C_SAND: u8 = 6;
 
 pub struct MinimapState {
     pub show_corner: bool,
-    pub pause_open: bool,
     fog: Vec<u32>,
     class_map: Vec<u8>,
     pub objective: Option<(u32, u32, TextId)>,
@@ -40,7 +39,6 @@ impl MinimapState {
     pub fn new() -> Self {
         Self {
             show_corner: true,
-            pause_open: false,
             fog: vec![0; FOG_WORDS],
             class_map: vec![C_GRASS; GRID * GRID],
             objective: None,
@@ -86,9 +84,6 @@ impl MinimapState {
     ) {
         if input.minimap_toggle {
             self.show_corner = !self.show_corner;
-        }
-        if input.buttons[BUTTON_PAUSE].pressed || input.buttons[BUTTON_CONFIRM].pressed {
-            self.pause_open = !self.pause_open;
         }
 
         if map_id != MapId::Overworld {
@@ -171,7 +166,7 @@ impl MinimapState {
         gems: u8,
         flags: &[u16],
     ) {
-        if !self.show_corner || self.pause_open || map_id != MapId::Overworld {
+        if !self.show_corner || map_id != MapId::Overworld {
             return;
         }
         let ox = 408.0;
@@ -205,7 +200,7 @@ impl MinimapState {
         gems: u8,
         flags: &[u16],
     ) {
-        if !self.pause_open || map_id != MapId::Overworld {
+        if map_id != MapId::Overworld {
             return;
         }
         d.rect(0.0, 0.0, 480.0, 270.0, "rgba(0,0,0,0.55)");

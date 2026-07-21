@@ -66,6 +66,9 @@ pub fn start() {
                         GameEvent::Save(json) => {
                             let _ = engine::save::save(SAVE_KEY, &json);
                         }
+                        GameEvent::SetMuted(b) => {
+                            p.audio.set_muted(b);
+                        }
                     }
                 }
             }

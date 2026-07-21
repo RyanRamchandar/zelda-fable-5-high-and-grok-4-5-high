@@ -1,12 +1,15 @@
+use std::sync::atomic::{AtomicBool, Ordering};
+
 use wasm_bindgen::JsCast;
 use web_sys::Window;
 
 use super::{
-    SharedInput, BUTTON_ATTACK, BUTTON_CYCLE, BUTTON_DASH, BUTTON_INTERACT, BUTTON_ITEM,
-    BUTTON_PAUSE,
+    SharedInput, BUTTON_ATTACK, BUTTON_CONFIRM, BUTTON_CYCLE, BUTTON_DASH, BUTTON_INTERACT,
+    BUTTON_ITEM, BUTTON_PAUSE,
 };
 
 const DEADZONE: f32 = 0.25;
+static NONSTANDARD_WARNED: AtomicBool = AtomicBool::new(false);
 
 pub fn poll(window: &Window, state: &mut SharedInput) {
     let navigator = window.navigator();
@@ -70,9 +73,22 @@ pub fn poll(window: &Window, state: &mut SharedInput) {
         if button_pressed(&buttons, 9) {
             pad_buttons[BUTTON_PAUSE] = true;
         }
-        // LB/RB cycle B-item (touch parity deferred to Phase 4).
+        // Back/Select → menu confirm (credits skip / menus).
+        if button_pressed(&buttons, 8) {
+            pad_buttons[BUTTON_CONFIRM] = true;
+        }
+        // LB/RB cycle B-item.
         if button_pressed(&buttons, 4) || button_pressed(&buttons, 5) {
             pad_buttons[BUTTON_CYCLE] = true;
+        }
+        let mapping = js_sys::Reflect::get(pad.as_ref(), &"mapping".into())
+            .ok()
+            .and_then(|v| v.as_string())
+            .unwrap_or_default();
+        if mapping != "standard" && !NONSTANDARD_WARNED.swap(true, Ordering::Relaxed) {
+            web_sys::console::warn_1(
+                &"gamepad: non-standard mapping; using fixed indices".into(),
+            );
         }
     }
 

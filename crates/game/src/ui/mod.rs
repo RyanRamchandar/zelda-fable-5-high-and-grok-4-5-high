@@ -7,7 +7,9 @@ pub mod dialog;
 pub mod dungeon_map;
 pub mod hud;
 pub mod minimap;
+pub mod pause;
 pub mod shop;
+pub mod title;
 pub mod viewer;
 
 use content::maps::MapId;
@@ -22,7 +24,9 @@ pub use banner::BannerState;
 pub use credits::CreditsState;
 pub use dialog::DialogState;
 pub use minimap::MinimapState;
+pub use pause::PauseState;
 pub use shop::ShopState;
+pub use title::TitleState;
 pub use viewer::SpriteViewer;
 
 pub struct UiState {
@@ -36,6 +40,8 @@ pub struct UiState {
     pub minimap: MinimapState,
     pub shop: ShopState,
     pub credits: CreditsState,
+    pub pause: PauseState,
+    pub title: TitleState,
 }
 
 impl UiState {
@@ -51,6 +57,8 @@ impl UiState {
             minimap: MinimapState::new(),
             shop: ShopState::new(),
             credits: CreditsState::new(),
+            pause: PauseState::new(),
+            title: TitleState::new(),
         }
     }
 }

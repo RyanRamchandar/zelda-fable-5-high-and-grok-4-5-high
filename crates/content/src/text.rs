@@ -51,6 +51,35 @@ pub enum TextId {
     ShardOfCourage,
     ElderVictory,
     TunicBought,
+    // Phase 4 meta / objectives / chapter cards
+    Act2Card,
+    Act3Card,
+    ObjVisitElder,
+    ObjGems0,
+    ObjGems1,
+    ObjGems2,
+    ObjOpenShrine,
+    ObjExploreShrine,
+    ObjBreakSeals,
+    ObjDefeatWarden,
+    ObjAct1Complete,
+    MenuContinue,
+    MenuNewGame,
+    MenuChapterSelect,
+    MenuSoundOn,
+    MenuSoundOff,
+    MenuEraseSave,
+    MenuEraseNo,
+    MenuEraseYes,
+    MenuPlay,
+    MenuRestart,
+    MenuResume,
+    MenuRestartCheckpoint,
+    MenuQuitTitle,
+    PauseMap,
+    PauseHelp,
+    PauseOptions,
+    CreditsSkipHint,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -265,7 +294,101 @@ pub fn text(id: TextId) -> &'static [&'static str] {
             "The Hero's Tunic — worn with pride.",
             "(Cosmetic; no armor change.)",
         ],
+        TextId::Act2Card => &["Storm Sigils — locked beyond Act 1."],
+        TextId::Act3Card => &["Molten Crucible — the final forge awaits."],
+        TextId::ObjVisitElder => &["VISIT THE ELDER"],
+        TextId::ObjGems0 => &["RECOVER THE THREE GEMS (0/3)"],
+        TextId::ObjGems1 => &["RECOVER THE THREE GEMS (1/3)"],
+        TextId::ObjGems2 => &["RECOVER THE THREE GEMS (2/3)"],
+        TextId::ObjOpenShrine => &["OPEN THE TRIFORCE SHRINE"],
+        TextId::ObjExploreShrine => &["EXPLORE THE SHRINE DEPTHS"],
+        TextId::ObjBreakSeals => &["BREAK THE TWO SEALS"],
+        TextId::ObjDefeatWarden => &["DEFEAT THE GRANITE WARDEN"],
+        TextId::ObjAct1Complete => &["ACT 1 COMPLETE"],
+        TextId::MenuContinue => &["CONTINUE"],
+        TextId::MenuNewGame => &["NEW GAME"],
+        TextId::MenuChapterSelect => &["CHAPTER SELECT"],
+        TextId::MenuSoundOn => &["SOUND: ON"],
+        TextId::MenuSoundOff => &["SOUND: OFF"],
+        TextId::MenuEraseSave => &["ERASE SAVE?"],
+        TextId::MenuEraseNo => &["NO"],
+        TextId::MenuEraseYes => &["YES"],
+        TextId::MenuPlay => &["PLAY"],
+        TextId::MenuRestart => &["RESTART"],
+        TextId::MenuResume => &["RESUME"],
+        TextId::MenuRestartCheckpoint => &["RESTART FROM CHECKPOINT"],
+        TextId::MenuQuitTitle => &["QUIT TO TITLE"],
+        TextId::PauseMap => &["MAP"],
+        TextId::PauseHelp => &["HELP"],
+        TextId::PauseOptions => &["OPTIONS"],
+        TextId::CreditsSkipHint => &["R / HOLD ATTACK TO SKIP"],
     }
+}
+
+/// Single-line label from a TextId (first page line).
+pub fn line(id: TextId) -> &'static str {
+    text(id).first().copied().unwrap_or("")
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct BindingRow {
+    pub verb: &'static str,
+    pub keyboard: &'static str,
+    pub gamepad: &'static str,
+    pub touch: &'static str,
+}
+
+pub fn binding_rows() -> &'static [BindingRow] {
+    &[
+        BindingRow {
+            verb: "Move",
+            keyboard: "WASD/Arrows",
+            gamepad: "Stick/D-pad",
+            touch: "Left stick",
+        },
+        BindingRow {
+            verb: "Attack",
+            keyboard: "J / Space",
+            gamepad: "A",
+            touch: "A button",
+        },
+        BindingRow {
+            verb: "Item",
+            keyboard: "K tap/hold",
+            gamepad: "X tap/hold",
+            touch: "B disc",
+        },
+        BindingRow {
+            verb: "Cycle item",
+            keyboard: "Q",
+            gamepad: "LB/RB",
+            touch: "Q disc",
+        },
+        BindingRow {
+            verb: "Dash",
+            keyboard: "L / Shift",
+            gamepad: "B",
+            touch: "D disc",
+        },
+        BindingRow {
+            verb: "Interact",
+            keyboard: "E",
+            gamepad: "Y",
+            touch: "! disc",
+        },
+        BindingRow {
+            verb: "Map",
+            keyboard: "M",
+            gamepad: "—",
+            touch: "Corner tap",
+        },
+        BindingRow {
+            verb: "Pause",
+            keyboard: "Esc",
+            gamepad: "Start",
+            touch: "Pause",
+        },
+    ]
 }
 
 pub fn credits_lines() -> &'static [&'static str] {

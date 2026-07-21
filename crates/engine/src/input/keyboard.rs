@@ -84,7 +84,7 @@ fn apply_key(state: &mut SharedInput, code: &str, down: bool) -> bool {
         "KeyL" | "ShiftLeft" | "ShiftRight" => state.key_held[BUTTON_DASH] = down,
         "KeyE" => state.key_held[BUTTON_INTERACT] = down,
         "Escape" => state.key_held[BUTTON_PAUSE] = down,
-        "Enter" => state.key_held[BUTTON_CONFIRM] = down,
+        "Enter" | "KeyR" => state.key_held[BUTTON_CONFIRM] = down,
         "KeyQ" => state.key_held[BUTTON_CYCLE] = down,
         "F1" => {
             state.debug_held[DEBUG_OVERLAY] = down;

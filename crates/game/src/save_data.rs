@@ -69,6 +69,8 @@ pub struct SaveGame {
     pub bomb_cap: u8,
     #[serde(default)]
     pub selected_item: u8,
+    #[serde(default)]
+    pub muted: bool,
 }
 
 impl SaveGame {
@@ -87,19 +89,25 @@ impl SaveGame {
             bombs: 0,
             bomb_cap: 0,
             selected_item: 0,
+            muted: false,
         }
     }
 
-    pub fn from_json(json: &str) -> Self {
+    /// Strict parse — `None` if missing/invalid/wrong version (no silent New Game).
+    pub fn try_from_json(json: &str) -> Option<Self> {
         match serde_json::from_str::<SaveGame>(json) {
             Ok(mut s) if s.version == SAVE_VERSION => {
                 if s.fog.len() < FOG_WORDS {
                     s.fog.resize(FOG_WORDS, 0);
                 }
-                s
+                Some(s)
             }
-            _ => Self::default_spawn(),
+            _ => None,
         }
+    }
+
+    pub fn from_json(json: &str) -> Self {
+        Self::try_from_json(json).unwrap_or_else(Self::default_spawn)
     }
 
     pub fn to_json(&self) -> Option<String> {

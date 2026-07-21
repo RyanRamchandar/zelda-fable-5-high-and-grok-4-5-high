@@ -24,6 +24,7 @@ pub struct SfxParams {
 pub struct Audio {
     ctx: Option<AudioContext>,
     unlocked: bool,
+    muted: bool,
     noise_buffer: Option<web_sys::AudioBuffer>,
 }
 
@@ -32,8 +33,17 @@ impl Audio {
         Self {
             ctx: None,
             unlocked: false,
+            muted: false,
             noise_buffer: None,
         }
+    }
+
+    pub fn set_muted(&mut self, muted: bool) {
+        self.muted = muted;
+    }
+
+    pub fn muted(&self) -> bool {
+        self.muted
     }
 
     fn ensure_ctx(&mut self) -> Result<&AudioContext, JsValue> {
@@ -88,6 +98,9 @@ impl Audio {
     }
 
     pub fn play(&mut self, p: &SfxParams) {
+        if self.muted {
+            return;
+        }
         self.resume();
         let Ok(_) = self.ensure_noise() else {
             return;
