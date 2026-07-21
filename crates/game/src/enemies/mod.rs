@@ -11,10 +11,41 @@ mod waves;
 
 use engine::input::InputState;
 
-use crate::world::entity::EntityKind;
-use crate::world::World;
+use crate::fx::FxKind;
+use crate::world::entity::{EntityData, EntityId, EntityKind, WispState};
+use crate::world::{World, WorldEvent};
+use content::audio::sfx::SfxId;
 
 pub use waves::WaveDirector;
+
+/// Generic stun: zero velocity and freeze AI for `ticks` (boomerang).
+pub fn stun(world: &mut World, id: EntityId, ticks: u16) {
+    let Some(e) = world.get_mut(id) else {
+        return;
+    };
+    // Phased wisp immune.
+    if let EntityData::Wisp(d) = &e.data {
+        if matches!(d.state, WispState::Phased | WispState::FadeOut) {
+            return;
+        }
+    }
+    e.vel = crate::math::Vec2::ZERO;
+    let pos = e.center();
+    match &mut e.data {
+        EntityData::Slime(d) => d.stun_ticks = ticks,
+        EntityData::Bat(d) => d.stun_ticks = ticks,
+        EntityData::Octorok(d) => d.stun_ticks = ticks,
+        EntityData::RaiderSpear(d) => d.stun_ticks = ticks,
+        EntityData::RaiderTorch(d) => d.stun_ticks = ticks,
+        EntityData::Wisp(d) => d.stun_ticks = ticks,
+        EntityData::Skeleton(_) => {
+            // Prefer stagger hook.
+        }
+        _ => {}
+    }
+    world.push_event(WorldEvent::FxRequest(FxKind::Impact { pos }));
+    world.push_event(WorldEvent::Sfx(SfxId::SkeletonRattle));
+}
 
 pub fn update(world: &mut World, input: &InputState, waves: &mut WaveDirector) {
     waves.update(world);
@@ -65,8 +96,9 @@ fn update_enemies(world: &mut World, _input: &InputState) {
             | EntityKind::Sign
             | EntityKind::Npc
             | EntityKind::Chest
-            | EntityKind::Gem
-            | EntityKind::Bomb => {}
+            |             EntityKind::Gem
+            | EntityKind::Bomb
+            | EntityKind::Boomerang => {}
         }
     }
     octorok::update_rocks(world);

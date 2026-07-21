@@ -58,6 +58,20 @@ pub enum SfxId {
     FlameBurst,
     WispPhase,
     SkeletonRattle,
+    // Phase 3A dungeon / boomerang
+    RoomSlide,
+    DoorUnlock,
+    ShutterSlam,
+    BoomerangThrow,
+    BoomerangCatch,
+    CrystalBlue,
+    CrystalAmber,
+    RuneGood,
+    RuneBad,
+    SealBreak,
+    TorchLight,
+    TorchSnuff,
+    KeyGet,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -135,6 +149,19 @@ pub fn spec(id: SfxId) -> SfxSpec {
         SfxId::FlameBurst => noise(140.0, 60.0, 0.01, 0.14, 0.16, 0.75),
         SfxId::WispPhase => sine(720.0, 420.0, 0.02, 0.16, 0.12),
         SfxId::SkeletonRattle => noise(180.0, 90.0, 0.01, 0.1, 0.12, 0.55),
+        SfxId::RoomSlide => noise(140.0, 80.0, 0.01, 0.12, 0.1, 0.45),
+        SfxId::DoorUnlock => saw(220.0, 360.0, 0.01, 0.14, 0.16),
+        SfxId::ShutterSlam => noise(100.0, 40.0, 0.005, 0.1, 0.16, 0.7),
+        SfxId::BoomerangThrow => saw(480.0, 320.0, 0.005, 0.08, 0.14),
+        SfxId::BoomerangCatch => sine(520.0, 720.0, 0.005, 0.08, 0.12),
+        SfxId::CrystalBlue => sine(660.0, 880.0, 0.01, 0.12, 0.14),
+        SfxId::CrystalAmber => sine(540.0, 720.0, 0.01, 0.12, 0.14),
+        SfxId::RuneGood => sine(740.0, 990.0, 0.01, 0.1, 0.12),
+        SfxId::RuneBad => square(180.0, 90.0, 0.01, 0.12, 0.1),
+        SfxId::SealBreak => saw(160.0, 420.0, 0.02, 0.28, 0.2),
+        SfxId::TorchLight => saw(300.0, 480.0, 0.01, 0.1, 0.12),
+        SfxId::TorchSnuff => noise(120.0, 60.0, 0.01, 0.1, 0.1, 0.6),
+        SfxId::KeyGet => sine(600.0, 960.0, 0.01, 0.16, 0.14),
     }
 }
 

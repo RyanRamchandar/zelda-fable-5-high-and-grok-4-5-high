@@ -455,3 +455,70 @@ Read Phase 2C-A completion + frozen seams (puzzle API, BUTTON_CYCLE, AttackKind:
 - PHASE_PLAN Phase 3 section rewritten to match. No gameplay code in this
   commit.
 
+
+## Phase 3A completion — 2026-07-21 (Grok 4.5 High Fast worker)
+
+### Gate
+Read Phase 3 planning + 2C frozen seams (puzzle hit API, BUTTON_CYCLE, skeleton::stagger,
+barricades, flags 90–99). Honored; overworld puzzle API untouched. Boomerang is a third
+projectile arm in `puzzle::process_hits` that does **not** set hit/despawn on tile contact.
+
+### What landed
+- **M1 headroom**: `world/entity_data.rs` (enemy family data + `BoomerangData`);
+  `game/src/events.rs` (`drain`); `lib.rs` ~508, `entity.rs` ~470.
+- **MapId::Dungeon (=4)** + `content/maps/dungeon.rs` + `dungeon_rooms.rs` (16 rooms,
+  reciprocal exits); shrine lobby north door → dungeon entry 0; dungeon south → lobby entry 1.
+- **Rooms**: `game/src/rooms.rs` — camera `set_bounds`, ~24-tick smoothstep slides,
+  shutter slam on Trials entry, key/boss/seal/inner door unlock from flags, debug
+  exit-reciprocity assert.
+- **Catalog 280–307** + art `tiles_dungeon` / `props_dungeon` / `items` (boomerang strip);
+  flags 100–139 + GRP 90–94 (Sanctum 94 locked); SFX + TextId appends.
+- **M2 Gale Boomerang**: `items/boomerang.rs` — throw/return/catch, pass-through combat
+  (`AttackKind::Boomerang` 0.5 dmg), `enemies::stun` + `skeleton::stagger`, style
+  `BoomerangStun`, puzzle hits + barricade chip 1, item cycle bombs↔boomerang, pickup magnet.
+- **M3 layout**: Vestibule / Trials 1–3 + boomerang chest + key1 / Currents curriculum /
+  flame key2 / seals / antechamber (boss key) / Sanctum + Arena stubs; checkpoints 7/8;
+  dungeon boot from save; `ui/dungeon_map.rs` (M + Esc pause page).
+- **M4 puzzles**: `content/puzzles_dungeon` + `game/puzzle/dungeon` — crystal toggles,
+  multi same-state gate, carry-a-flame, ordered seal throws; both seals open ante shutters.
+- **M5 HUD**: dungeon key pips + boomerang icon; F1+H grants bombs + boomerang + keys (debug).
+
+### Tuning / decisions logged
+- Boomerang flies over WATER (SOLID only blocks); speed 3.4 out / 4.2 return, range 112 px,
+  stun 60 ticks — defaults within ±0 after smoke.
+- West wing open by design; Currents door = SmallKey (`DDOOR_WING`); Lines→SealE = InnerKey
+  (`DDOOR_INNER`). Key inventory derived from chest flags − door flags.
+- Unsolved flame torches reset on room re-enter; seals persist via flags.
+- Multi-frame dungeon sprites: `SpriteDef.w` is **frame** width (atlas `w * frames`).
+
+### Verification
+- `cargo check` + `clippy -D warnings` (wasm32) clean
+- `env -u NO_COLOR trunk build --release` ok
+- Playwright vs `python3 -m http.server 8090 --directory dist` (`/tmp/p3a_smoke/`):
+  boot OW, F1+H grants flags 100–103, F3 Arena WAVE 1 ~60 fps; **http.server + headless killed**
+- File caps: lib 508, entity 470, puzzle/dungeon 493, rooms 393, dungeon map 369
+
+### Frozen seams for 3B (do not break)
+1. `RoomDef` / `rooms()` / `RoomsState` / slide API (`rooms::update` pause)
+2. Dungeon geometry: Sanctum Core + Guardian Arena rects, entries, `GRP_DNG_SANCTUM=94`
+   (locked), boss-door tiles, checkpoint 8
+3. `AttackKind::Boomerang` (pass-through, stun-on-hit, dmg 0.5) + `enemies::stun` +
+   `throw_id` dedupe; `skeleton::stagger` for shield drop
+4. Flags **100–139** allocated; **140–149** reserved for 3B; `TUNIC_UNLOCKED=98` still reserved
+5. `DungeonPuzzleState` + crystal-toggle / seal-order APIs (3B boss crystals are entities)
+6. Catalog **280–307** used; **308–309** spare; **310–319** reserved for 3B arena dressing
+7. `Loot::{Boomerang,SmallKey,BossKey}`; `verb_cooldowns: [u16; 7]`; `StyleVerb::BoomerangStun`
+
+### Deviations / residual risks
+- Trials II plate is placed; exit still primarily shutter-gated on `GroupCleared` (plate is
+  teach-pressure, not a hard soft-lock gate).
+- Seal throw geometry is authored for plinth lines — freestyle solves possible; human feel
+  pass owed on throw tolerance + shutter fight density.
+- Overworld retro-enable verified by code path (same `process_hits` arm); live post-dungeon
+  field throw not fully scripted in smoke (F1 grant exercises combat/puzzle arms).
+- Touch item parity still Phase 4; gamepad LB/RB cycle still untested on hardware.
+
+### Ready for Phase 3B?
+**YES** — dungeon walkable with debug grants, boomerang + curriculum + keys + minimap +
+dormant Sanctum/Arena stubs. 3B can drop Ironshell / Granite Warden into reserved seams
+without map surgery.

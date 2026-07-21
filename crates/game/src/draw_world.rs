@@ -390,6 +390,14 @@ pub fn render_entity(d: &mut Draw, e: &Entity, sprites: &SpriteMap) {
                 d.rect(e.pos.x + 2.0, e.pos.y + 2.0, 12.0, 12.0, "#202830");
             }
         }
+        EntityKind::Boomerang => {
+            let frame = e.anim.frame as u32;
+            if let Some(h) = sprites.get("boomerang") {
+                d.sprite(h, frame.min(3), e.pos.x, e.pos.y, false);
+            } else {
+                d.rect(e.pos.x + 2.0, e.pos.y + 2.0, 12.0, 12.0, "#40e0c0");
+            }
+        }
         // Drawn in `draw_enemies::try_render_enemy`.
         EntityKind::Dummy
         | EntityKind::Slime

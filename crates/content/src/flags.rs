@@ -67,3 +67,35 @@ pub const GRP_SHRINE: u16 = 70;
 
 /// Spawner wave unlock chain: clear `from` → unlock + force-spawn `to`.
 pub const CAMP_WAVE_CHAIN: [(u16, u16); 2] = [(41, 42), (42, 43)];
+
+/// Phase 3A dungeon / boomerang (100–139). 140–149 reserved for 3B.
+pub const ITEM_BOOMERANG: u16 = 100;
+pub const DKEY_SMALL_1: u16 = 101;
+pub const DKEY_SMALL_2: u16 = 102;
+pub const DKEY_BOSS: u16 = 103;
+pub const DDOOR_WING: u16 = 104; // unused — west wing open by design
+pub const DDOOR_INNER: u16 = 105;
+pub const DDOOR_BOSS_USED: u16 = 106;
+pub const SEAL_WEST: u16 = 107;
+pub const SEAL_EAST: u16 = 108;
+pub const DCHEST_BOOMERANG: u16 = 110;
+pub const DCHEST_KEY1: u16 = 111;
+pub const DCHEST_KEY2: u16 = 112;
+pub const DCHEST_BOSSKEY: u16 = 113;
+pub const DCHEST_RUPEE_A: u16 = 114;
+pub const DCHEST_RUPEE_B: u16 = 115;
+pub const DCHEST_RUPEE_C: u16 = 116;
+/// Room discovery flags: DROOM_0 + room_id
+pub const DROOM_0: u16 = 120;
+pub const DROOM_MAX: u16 = 139;
+
+pub const GRP_DNG_TRIALS_1: u16 = 90;
+pub const GRP_DNG_TRIALS_2: u16 = 91;
+pub const GRP_DNG_TRIALS_3: u16 = 92;
+pub const GRP_DNG_CURRENTS: u16 = 93;
+/// Sanctum miniboss — reserved/locked until Phase 3B.
+pub const GRP_DNG_SANCTUM: u16 = 94;
+
+pub fn droom_flag(room_id: u8) -> u16 {
+    DROOM_0 + room_id as u16
+}

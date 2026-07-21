@@ -2,6 +2,7 @@
 
 pub mod banner;
 pub mod dialog;
+pub mod dungeon_map;
 pub mod hud;
 pub mod minimap;
 pub mod shop;
@@ -90,6 +91,7 @@ pub fn render_debug(
         MapId::ShrineLobby => "Lobby",
         MapId::House(n) => return_house_label(n),
         MapId::Cave(n) => return_cave_label(n),
+        MapId::Dungeon => "Dungeon",
     };
     let chunk_line = if map_stats.direct {
         "chunks: direct".into()

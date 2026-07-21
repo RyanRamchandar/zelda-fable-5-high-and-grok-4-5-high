@@ -207,6 +207,38 @@ fn open_chest(game: &mut Game, id: crate::world::EntityId) -> Option<String> {
         Loot::Gem(gid) => {
             grant_gem(game, gid);
         }
+        Loot::Boomerang => {
+            set_flag(&mut game.flags, save_flags::ITEM_BOOMERANG);
+            if let Some(p) = game.world.get_mut(game.world.player_id) {
+                if let EntityData::Player(pd) = &mut p.data {
+                    pd.selected_item = 2;
+                }
+            }
+            game.ui.dialog.open_text(TextId::BoomerangGet);
+            game.world.push_event(WorldEvent::FxRequest(FxKind::Toast {
+                text: "GALE BOOMERANG",
+            }));
+            game.world.push_event(WorldEvent::Sfx(SfxId::GemGet));
+            game.world.push_event(WorldEvent::FxRequest(FxKind::Impact { pos }));
+        }
+        Loot::SmallKey => {
+            if flag == save_flags::DCHEST_KEY1 {
+                set_flag(&mut game.flags, save_flags::DKEY_SMALL_1);
+            } else {
+                set_flag(&mut game.flags, save_flags::DKEY_SMALL_2);
+            }
+            game.world.push_event(WorldEvent::FxRequest(FxKind::Toast {
+                text: "SMALL KEY",
+            }));
+            game.world.push_event(WorldEvent::Sfx(SfxId::KeyGet));
+        }
+        Loot::BossKey => {
+            set_flag(&mut game.flags, save_flags::DKEY_BOSS);
+            game.world.push_event(WorldEvent::FxRequest(FxKind::Toast {
+                text: "BOSS KEY",
+            }));
+            game.world.push_event(WorldEvent::Sfx(SfxId::KeyGet));
+        }
     }
     save_from(game)
 }

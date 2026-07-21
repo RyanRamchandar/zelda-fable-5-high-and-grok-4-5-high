@@ -107,6 +107,22 @@ pub fn resolve_hits(world: &mut World) {
                         false,
                     ))
                 }
+                EntityKind::Boomerang => {
+                    let EntityData::Boomerang(b) = &e.data else {
+                        continue;
+                    };
+                    Some((
+                        e.kind,
+                        true,
+                        e.center(),
+                        b.dir,
+                        0.5,
+                        1.0,
+                        b.throw_id,
+                        false,
+                        false,
+                    ))
+                }
                 EntityKind::Player
                 | EntityKind::Dummy
                 | EntityKind::Pickup
@@ -139,23 +155,32 @@ pub fn resolve_hits(world: &mut World) {
         if from_player {
             let targets =
                 crate::world::physics::query_aabb(world, center, Vec2::new(4.0, 4.0), layer::ENEMY_BODY);
+            let is_boom = kind == EntityKind::Boomerang;
             for tid in targets {
                 if world.already_hit(swing_id, tid.index) {
                     continue;
                 }
                 world.mark_hit(swing_id, tid.index);
-                mark_proj_hit(world, id);
+                if !is_boom {
+                    mark_proj_hit(world, id);
+                }
                 world.push_event(WorldEvent::AttackHit {
                     target: tid,
-                    attack: AttackKind::Beam,
+                    attack: if is_boom {
+                        AttackKind::Boomerang
+                    } else {
+                        AttackKind::Beam
+                    },
                     dir,
                     pos: center,
                     damage,
                     knockback,
                     source: id,
                 });
-                world.despawn(id);
-                break;
+                if !is_boom {
+                    world.despawn(id);
+                    break;
+                }
             }
         } else {
             let hit_player = world

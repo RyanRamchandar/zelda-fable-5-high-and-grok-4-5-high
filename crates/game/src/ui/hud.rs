@@ -106,18 +106,39 @@ pub fn draw(d: &mut Draw, world: &World, sprites: &SpriteMap) {
     } else {
         d.rect(ITEM_X, ITEM_Y, ITEM_S, ITEM_S, "#303030");
     }
-    if pd.bomb_cap > 0 {
-        let flash = pd.item_cycle_flash > 0;
-        if let Some(h) = sprites.get("prop_bomb") {
-            d.sprite(h, 0, ITEM_X, ITEM_Y, false);
-        } else {
-            d.rect(ITEM_X + 4.0, ITEM_Y + 4.0, 12.0, 12.0, "#303848");
+    let flash = pd.item_cycle_flash > 0;
+    match pd.selected_item {
+        2 => {
+            if let Some(h) = sprites.get("boomerang") {
+                d.sprite(h, 0, ITEM_X, ITEM_Y, false);
+            } else {
+                d.rect(ITEM_X + 4.0, ITEM_Y + 4.0, 12.0, 12.0, "#40e0c0");
+            }
+            if flash {
+                d.text("B", ITEM_X + 14.0, ITEM_Y + 18.0, "#40ffff");
+            }
         }
-        let col = if flash { "#40ffff" } else { "#e8e8e8" };
-        d.text(&format!("{}", pd.bombs), ITEM_X + 12.0, ITEM_Y + 18.0, col);
-    } else {
-        d.text("—", ITEM_X + 6.0, ITEM_Y + 14.0, "#808080");
+        1 if pd.bomb_cap > 0 => {
+            if let Some(h) = sprites.get("prop_bomb") {
+                d.sprite(h, 0, ITEM_X, ITEM_Y, false);
+            } else {
+                d.rect(ITEM_X + 4.0, ITEM_Y + 4.0, 12.0, 12.0, "#303848");
+            }
+            let col = if flash { "#40ffff" } else { "#e8e8e8" };
+            d.text(&format!("{}", pd.bombs), ITEM_X + 12.0, ITEM_Y + 18.0, col);
+        }
+        _ => {
+            d.text("—", ITEM_X + 6.0, ITEM_Y + 14.0, "#808080");
+        }
     }
 
     d.text(&format!("₹{}", pd.rupees), 8.0, 26.0, "#40e080");
+}
+
+/// Dungeon key pips (drawn from Game render when in dungeon).
+pub fn draw_dungeon_keys(d: &mut Draw, small_keys: u8, boss_key: bool) {
+    d.text(&format!("K{}", small_keys), 400.0, 8.0, "#e8d060");
+    if boss_key {
+        d.text("BK", 430.0, 8.0, "#ff8040");
+    }
 }

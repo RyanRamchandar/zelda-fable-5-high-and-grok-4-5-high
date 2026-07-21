@@ -2,6 +2,7 @@
 
 pub mod camera;
 pub mod entity;
+pub mod entity_data;
 pub mod physics;
 pub mod spawner;
 
@@ -29,6 +30,7 @@ pub enum AttackKind {
     #[allow(dead_code)]
     DebugShot,
     Bomb,
+    Boomerang,
 }
 
 #[derive(Clone, Debug)]

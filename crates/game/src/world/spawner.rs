@@ -49,6 +49,8 @@ impl Spawner {
                 locked_groups.push(next);
             }
         }
+        // Phase 3A: sanctum miniboss reserved for 3B.
+        locked_groups.push(flags::GRP_DNG_SANCTUM);
 
         let mut slots = Vec::new();
         for def in world.map.spawns.clone() {

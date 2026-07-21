@@ -2,6 +2,8 @@
 
 pub mod arena;
 pub mod catalog;
+pub mod dungeon;
+pub mod dungeon_rooms;
 pub mod interiors;
 pub mod overworld;
 pub mod paint;
@@ -35,6 +37,7 @@ pub enum MapId {
     Shop,
     Cave(u8),
     ShrineLobby,
+    Dungeon,
 }
 
 impl MapId {
@@ -44,6 +47,7 @@ impl MapId {
             MapId::Arena => 1,
             MapId::Shop => 2,
             MapId::ShrineLobby => 3,
+            MapId::Dungeon => 4,
             MapId::House(n) => 10 + n.min(5),
             MapId::Cave(n) => 20 + n.min(2),
         }
@@ -55,6 +59,7 @@ impl MapId {
             1 => MapId::Arena,
             2 => MapId::Shop,
             3 => MapId::ShrineLobby,
+            4 => MapId::Dungeon,
             10..=15 => MapId::House(v - 10),
             20..=22 => MapId::Cave(v - 20),
             _ => MapId::Overworld,
@@ -67,6 +72,9 @@ pub enum Loot {
     Rupees(u32),
     HeartPiece,
     Gem(u8),
+    Boomerang,
+    SmallKey,
+    BossKey,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -311,5 +319,6 @@ pub fn build(id: MapId) -> MapDef {
         MapId::Cave(1) => interiors::cave_heart(),
         MapId::Cave(_) => interiors::cave_bomb(),
         MapId::ShrineLobby => interiors::shrine_lobby(),
+        MapId::Dungeon => dungeon::build(),
     }
 }

@@ -13,7 +13,10 @@ pub mod props_wild;
 pub mod tiles;
 pub mod tiles_forest;
 pub mod tiles_terrain;
+pub mod tiles_dungeon;
 pub mod tiles_water;
+pub mod props_dungeon;
+pub mod items;
 pub mod ui;
 
 use palette::PaletteSwap;
@@ -194,6 +197,36 @@ pub fn all_bakes() -> Vec<SpriteBake> {
         bake(&npcs::NPC_VILLAGER_B),
         bake(&npcs::NPC_VILLAGER_C),
         bake(&npcs::NPC_KID),
+        // Phase 3A dungeon
+        bake(&tiles_dungeon::D_FLOOR_A),
+        bake(&tiles_dungeon::D_FLOOR_B),
+        bake(&tiles_dungeon::D_FLOOR_RUNE),
+        bake(&tiles_dungeon::D_WALL),
+        bake(&tiles_dungeon::D_WALL_TOP),
+        bake(&tiles_dungeon::D_PIT),
+        bake(&tiles_dungeon::D_WATER),
+        bake(&tiles_dungeon::D_WATER_EDGE),
+        bake(&tiles_dungeon::D_STAIRS),
+        bake(&tiles_dungeon::D_DOOR_OPEN),
+        bake(&tiles_dungeon::D_DOOR_LOCKED),
+        bake(&tiles_dungeon::D_DOOR_BOSS),
+        bake(&tiles_dungeon::D_SHUTTER),
+        bake(&tiles_dungeon::D_LIFT),
+        bake(&tiles_dungeon::D_CRYSTAL_BLUE),
+        bake(&tiles_dungeon::D_CRYSTAL_AMBER),
+        bake(&tiles_dungeon::D_GATE_BLUE_UP),
+        bake(&tiles_dungeon::D_GATE_BLUE_DOWN),
+        bake(&tiles_dungeon::D_GATE_AMBER_UP),
+        bake(&tiles_dungeon::D_GATE_AMBER_DOWN),
+        bake(&props_dungeon::D_TORCH_LIT),
+        bake(&props_dungeon::D_TORCH_UNLIT),
+        bake(&props_dungeon::D_BRAZIER_ETERNAL),
+        bake(&props_dungeon::D_RUNE_1),
+        bake(&props_dungeon::D_RUNE_2),
+        bake(&props_dungeon::D_RUNE_3),
+        bake(&props_dungeon::D_SEAL_DOOR),
+        bake(&props_dungeon::D_SEAL_BROKEN),
+        bake(&items::BOOMERANG),
         // UI
         bake(&ui::UI_HEART_FULL),
         bake(&ui::UI_HEART_HALF),

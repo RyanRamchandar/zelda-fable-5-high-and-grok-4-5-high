@@ -15,6 +15,8 @@ pub struct Camera {
     pub shake_ticks: u8,
     pub shake_mag: f32,
     look: Vec2,
+    /// Optional world-space clamp rect (min, max) for dungeon rooms.
+    bounds: Option<(Vec2, Vec2)>,
 }
 
 impl Camera {
@@ -25,7 +27,16 @@ impl Camera {
             shake_ticks: 0,
             shake_mag: 0.0,
             look: Vec2::ZERO,
+            bounds: None,
         }
+    }
+
+    pub fn set_bounds(&mut self, bounds: Option<(Vec2, Vec2)>) {
+        self.bounds = bounds;
+    }
+
+    pub fn clear_bounds(&mut self) {
+        self.bounds = None;
     }
 
     pub fn add_shake(&mut self, mag: f32, ticks: u8) {
@@ -64,8 +75,29 @@ impl Camera {
 
         let half_w = 240.0;
         let half_h = 135.0;
-        self.pos.x = self.pos.x.clamp(half_w, (map_w_px - half_w).max(half_w));
-        self.pos.y = self.pos.y.clamp(half_h, (map_h_px - half_h).max(half_h));
+        if let Some((min, max)) = self.bounds {
+            let rw = max.x - min.x;
+            let rh = max.y - min.y;
+            if rw < 480.0 {
+                self.pos.x = (min.x + max.x) * 0.5;
+            } else {
+                self.pos.x = self
+                    .pos
+                    .x
+                    .clamp(min.x + half_w, (max.x - half_w).max(min.x + half_w));
+            }
+            if rh < 270.0 {
+                self.pos.y = (min.y + max.y) * 0.5;
+            } else {
+                self.pos.y = self
+                    .pos
+                    .y
+                    .clamp(min.y + half_h, (max.y - half_h).max(min.y + half_h));
+            }
+        } else {
+            self.pos.x = self.pos.x.clamp(half_w, (map_w_px - half_w).max(half_w));
+            self.pos.y = self.pos.y.clamp(half_h, (map_h_px - half_h).max(half_h));
+        }
 
         if self.shake_ticks > 0 {
             let m = self.shake_mag;

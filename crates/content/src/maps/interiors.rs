@@ -164,6 +164,24 @@ pub fn shrine_lobby() -> MapDef {
     map.set(8, 4, TileLayer::Ground, T_PEDESTAL);
     map.set(4, 3, TileLayer::Ground, T_BRAZIER);
     map.set(11, 3, TileLayer::Ground, T_BRAZIER);
+    // North door into the dungeon.
+    map.set(8, 0, TileLayer::Ground, T_DOOR_OPEN);
+    map.set_flags(8, 0, 0);
+    map.entries.push(EntryPoint {
+        id: 1,
+        tx: 8,
+        ty: 2,
+    });
+    map.triggers.push(TriggerDef {
+        tx: 8,
+        ty: 0,
+        w: 1,
+        h: 1,
+        kind: TriggerKind::Door {
+            target: MapId::Dungeon,
+            entry: 0,
+        },
+    });
     map.spawns.push(SpawnDef {
         tx: 8,
         ty: 5,

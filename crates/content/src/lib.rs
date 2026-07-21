@@ -6,4 +6,5 @@ pub mod audio;
 pub mod flags;
 pub mod maps;
 pub mod puzzles;
+pub mod puzzles_dungeon;
 pub mod text;

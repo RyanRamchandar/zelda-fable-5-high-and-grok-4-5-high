@@ -39,6 +39,15 @@ pub enum TextId {
     WisdomGemHold,
     SecretFound,
     MeadowFairy,
+    DungeonLore,
+    CurrentsSign,
+    FlameSign,
+    SealSignW,
+    SealSignE,
+    SanctumStub,
+    ArenaStub,
+    BoomerangGet,
+    DoorLocked,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -176,8 +185,8 @@ pub fn text(id: TextId) -> &'static [&'static str] {
             "The way into the lobby opens.",
         ],
         TextId::ShrineLobby => &[
-            "The dungeon lies beyond.",
-            "(Act 1 dungeon — Phase 3)",
+            "North: the Triforce Shrine.",
+            "The wind sleeps in the west wing.",
         ],
         TextId::HollowWall => &["It sounds hollow…"],
         TextId::SummitVista => &[
@@ -204,5 +213,40 @@ pub fn text(id: TextId) -> &'static [&'static str] {
             "A fairy answers the flower ring!",
             "Energy floods your spirit.",
         ],
+        TextId::DungeonLore => &[
+            "Cool stone and teal currents…",
+            "The wind sleeps in the west wing.",
+            "Wake it, and the seals will listen.",
+        ],
+        TextId::CurrentsSign => &[
+            "Blue and amber answer the wind.",
+            "Strike a crystal; its gates reply.",
+        ],
+        TextId::FlameSign => &[
+            "Carry the eternal flame.",
+            "Light both torches — carefully.",
+        ],
+        TextId::SealSignW => &[
+            "Three crystals. One throw.",
+            "Follow the runes in order.",
+        ],
+        TextId::SealSignE => &[
+            "Cross the channel in sequence.",
+            "The return must finish the triad.",
+        ],
+        TextId::SanctumStub => &[
+            "Something ancient stirs…",
+            "(Phase 3B)",
+        ],
+        TextId::ArenaStub => &[
+            "A silent arena waits.",
+            "(Phase 3B)",
+        ],
+        TextId::BoomerangGet => &[
+            "The Gale Boomerang!",
+            "Tap ITEM to throw. Q cycles gear.",
+            "The wind answers in order.",
+        ],
+        TextId::DoorLocked => &["Locked. A key is needed."],
     }
 }

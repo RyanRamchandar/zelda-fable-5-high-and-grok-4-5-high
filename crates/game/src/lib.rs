@@ -6,12 +6,14 @@ mod debug;
 mod draw_enemies;
 mod draw_world;
 mod enemies;
+mod events;
 mod fx;
 mod interact;
 mod items;
 mod math;
 mod player;
 mod puzzle;
+mod rooms;
 mod save_data;
 mod state;
 mod ui;
@@ -26,19 +28,16 @@ use engine::chunks::ChunkCache;
 use engine::input::{InputState, DEBUG_ACTION, DEBUG_MAP, DEBUG_OVERLAY, DEBUG_TELEPORT};
 use engine::render::Draw;
 
-use crate::combat::style;
 use crate::draw_world::{MapRenderStats, TileSprites};
 use crate::enemies::WaveDirector;
-use crate::fx::{FxKind, FxState};
+use crate::fx::FxState;
 use crate::math::{Dir4, Vec2};
 use crate::puzzle::PuzzleState;
-use crate::state::{fade_alpha, save_from_game, GameMode};
+use crate::state::{fade_alpha, GameMode};
 use crate::ui::UiState;
 use crate::world::entity::{EntityData, EntityKind};
 use crate::world::physics;
-use crate::world::{Spawner, World, WorldEvent};
-
-const SAVE_INTERVAL_TICKS: u32 = 60;
+use crate::world::{Spawner, World};
 
 #[derive(Clone, Debug)]
 pub enum GameEvent {
@@ -54,13 +53,13 @@ pub struct Game {
     pub(crate) gems: u8,
     pub(crate) flags: Vec<u16>,
     pub(crate) chunk_cache_reset: bool,
-    fx: FxState,
+    pub(crate) fx: FxState,
     pub(crate) ui: UiState,
     sprites: SpriteMap,
     tile_sprites: TileSprites,
     chunk_cache: Option<ChunkCache>,
     waves: WaveDirector,
-    ticks: u32,
+    pub(crate) ticks: u32,
     touch_active: bool,
     touch_overlay: engine::input::TouchOverlay,
     map_stats: MapRenderStats,
@@ -68,6 +67,8 @@ pub struct Game {
     pub(crate) door_cooldown: u8,
     pub(crate) pending_save: Option<String>,
     pub(crate) puzzle: PuzzleState,
+    pub(crate) rooms: Option<rooms::RoomsState>,
+    pub(crate) dungeon_puzzle: Option<puzzle::dungeon::DungeonPuzzleState>,
 }
 
 impl Game {
@@ -75,10 +76,10 @@ impl Game {
         let tile_sprites = TileSprites::build(&sprites);
         let map_id = save.map_id();
         // Boot overworld at checkpoint entry (New Game = entry 0).
-        let map_id = if map_id == MapId::Arena {
-            MapId::Arena
-        } else {
-            MapId::Overworld
+        let map_id = match map_id {
+            MapId::Arena => MapId::Arena,
+            MapId::Dungeon => MapId::Dungeon,
+            _ => MapId::Overworld,
         };
         let entry = save.checkpoint;
         let map = maps::build(map_id);
@@ -117,7 +118,7 @@ impl Game {
         ui.minimap.build_class_map(&world.map);
         ui.minimap.refresh_objective(save.gems, &save.flags);
 
-        Self {
+        let mut game = Self {
             world,
             spawner,
             current_map: map_id,
@@ -144,7 +145,13 @@ impl Game {
             door_cooldown: 0,
             pending_save: None,
             puzzle: PuzzleState::for_map(map_id),
+            rooms: None,
+            dungeon_puzzle: None,
+        };
+        if map_id == MapId::Dungeon {
+            rooms::on_enter_dungeon(&mut game);
         }
+        game
     }
 
     pub fn from_storage_json(json: Option<String>, sprites: SpriteMap) -> Self {
@@ -183,7 +190,7 @@ impl Game {
         if matches!(self.mode, GameMode::Transition(_)) {
             state::tick_transition(self);
             self.ui.banner.update();
-            return self.drain_events(input);
+            return events::drain(self, input);
         }
 
         // Dialog / pause-map / shop pause world sim (viewer pattern).
@@ -203,7 +210,13 @@ impl Game {
                     self.pending_save = Some(json);
                 }
             }
-            return self.drain_events(input);
+            return events::drain(self, input);
+        }
+
+        // Room slide pauses world sim (dialog pattern).
+        if rooms::update(self) {
+            self.ui.banner.update();
+            return events::drain(self, input);
         }
 
         self.world.tick = self.world.tick.wrapping_add(1);
@@ -216,12 +229,12 @@ impl Game {
         if self.world.hitstop > 0 {
             self.world.hitstop -= 1;
             fx::update(&mut self.world, &mut self.fx);
-            return self.drain_events(input);
+            return events::drain(self, input);
         }
 
         if self.ui.debug_overlay && input.debug[DEBUG_ACTION].pressed {
             debug::spawn_debug_shot(&mut self.world);
-            // Temporary bomb grant for M3 testing (behind F1).
+            // Temporary bomb / boomerang grant (behind F1).
             if let Some(p) = self.world.get_mut(self.world.player_id) {
                 if let EntityData::Player(pd) = &mut p.data {
                     if pd.bomb_cap == 0 {
@@ -233,14 +246,23 @@ impl Game {
                     }
                 }
             }
+            crate::save_data::set_flag(&mut self.flags, content::flags::ITEM_BOOMERANG);
+            crate::save_data::set_flag(&mut self.flags, content::flags::DKEY_SMALL_1);
+            crate::save_data::set_flag(&mut self.flags, content::flags::DKEY_SMALL_2);
+            crate::save_data::set_flag(&mut self.flags, content::flags::DKEY_BOSS);
+            if let Some(p) = self.world.get_mut(self.world.player_id) {
+                if let EntityData::Player(pd) = &mut p.data {
+                    pd.selected_item = 2;
+                }
+            }
         }
 
-        player::update(&mut self.world, input);
+        player::update(&mut self.world, input, &self.flags);
         if let Some(json) = interact::update(self, input) {
             self.pending_save = Some(json);
         }
         if self.ui.dialog.open || self.ui.shop.open {
-            return self.drain_events(input);
+            return events::drain(self, input);
         }
         self.spawner.update(&mut self.world);
         if self.current_map == MapId::Arena {
@@ -273,7 +295,7 @@ impl Game {
             camera.update(map_w, map_h, rng, target, facing);
         }
 
-        self.drain_events(input)
+        events::drain(self, input)
     }
 
     fn cycle_teleport(&mut self) {
@@ -294,125 +316,6 @@ impl Game {
         ));
         self.door_cooldown = 30;
         self.chunk_cache_reset = true;
-    }
-
-    fn drain_events(&mut self, _input: &InputState) -> Vec<GameEvent> {
-        let raw = std::mem::take(&mut self.world.events);
-        let rest = combat::route_combat_events(&mut self.world, raw);
-        let mut rest = rest;
-        rest.extend(std::mem::take(&mut self.world.events));
-
-        let mut outbound = Vec::new();
-        let mut sfx_count = 0u8;
-
-        for ev in rest {
-            match ev {
-                WorldEvent::FxRequest(kind) => {
-                    self.fx.handle(kind, &mut self.world.rng);
-                }
-                WorldEvent::Sfx(id) => {
-                    if sfx_count < 8 {
-                        outbound.push(GameEvent::Sfx(id));
-                        sfx_count += 1;
-                    }
-                }
-                WorldEvent::StyleAction(verb) => {
-                    let pid = self.world.player_id;
-                    let mut follow = Vec::new();
-                    if let Some(p) = self.world.get_mut(pid) {
-                        if let EntityData::Player(pd) = &mut p.data {
-                            follow = style::apply_verb(pd, verb);
-                        }
-                    }
-                    for fev in follow {
-                        match fev {
-                            WorldEvent::FxRequest(k) => self.fx.handle(k, &mut self.world.rng),
-                            WorldEvent::Sfx(id) if sfx_count < 8 => {
-                                outbound.push(GameEvent::Sfx(id));
-                                sfx_count += 1;
-                            }
-                            other => self.world.events.push(other),
-                        }
-                    }
-                }
-                WorldEvent::EnergyDenied => {}
-                WorldEvent::Killed { kind: _kind, pos } => {
-                    self.fx.handle(FxKind::KillPoof { pos }, &mut self.world.rng);
-                    if sfx_count < 8 {
-                        outbound.push(GameEvent::Sfx(SfxId::Kill));
-                        sfx_count += 1;
-                    }
-                    items::pickups::spawn_drops(&mut self.world, pos);
-                }
-                WorldEvent::AttackHit { .. } | WorldEvent::DamagedPlayer { .. } => {}
-                WorldEvent::RegionEntered(region) => {
-                    if let Some(r) = self.world.map.regions.get(region as usize) {
-                        self.ui
-                            .banner
-                            .on_region(region, r.name, self.world.tick);
-                    }
-                }
-                WorldEvent::GroupCleared(group) => {
-                    if let Some(&(_, next)) = content::flags::CAMP_WAVE_CHAIN
-                        .iter()
-                        .find(|(from, _)| *from == group)
-                    {
-                        self.spawner.unlock_and_activate(&mut self.world, next);
-                        let toast = if next == content::flags::GRP_CAMP_W2 {
-                            "WAVE 2!"
-                        } else {
-                            "WAVE 3!"
-                        };
-                        self.fx.handle(
-                            FxKind::Toast { text: toast },
-                            &mut self.world.rng,
-                        );
-                        if sfx_count < 8 {
-                            outbound.push(GameEvent::Sfx(SfxId::WaveCue));
-                            sfx_count += 1;
-                        }
-                    }
-                    if group == content::flags::GRP_CAMP_W3 {
-                        crate::save_data::set_flag(
-                            &mut self.flags,
-                            content::flags::GROUP_CAMP_GUARD,
-                        );
-                        self.spawner.camp_war_won = true;
-                        self.spawner.locked_groups = vec![
-                            content::flags::GRP_CAMP_W2,
-                            content::flags::GRP_CAMP_W3,
-                        ];
-                        self.fx.handle(
-                            FxKind::Toast {
-                                text: "GUARDS CLEARED",
-                            },
-                            &mut self.world.rng,
-                        );
-                        let save = save_from_game(self);
-                        if let Some(json) = save.to_json() {
-                            self.pending_save = Some(json);
-                        }
-                    }
-                }
-            }
-        }
-
-        if let Some(json) = self.pending_save.take() {
-            outbound.push(GameEvent::Save(json));
-        }
-
-        self.ticks = self.ticks.wrapping_add(1);
-        self.ui.fps_accum = self.ui.fps_accum.wrapping_add(1);
-        if self.ticks.is_multiple_of(SAVE_INTERVAL_TICKS) {
-            let save = save_from_game(self);
-            if let Some(json) = save.to_json() {
-                outbound.push(GameEvent::Save(json));
-            }
-            self.ui.fps_est = self.ui.renders as f32;
-            self.ui.renders = 0;
-        }
-
-        outbound
     }
 
     pub fn render(&mut self, d: &mut Draw) {
@@ -461,26 +364,40 @@ impl Game {
 
         d.set_offset(0.0, 0.0);
         ui::render_hud(d, &self.world, &self.sprites);
+        if self.current_map == MapId::Dungeon {
+            ui::hud::draw_dungeon_keys(
+                d,
+                rooms::small_keys_held(&self.flags),
+                crate::save_data::has_flag(&self.flags, content::flags::DKEY_BOSS),
+            );
+            ui::dungeon_map::render_corner(d, self);
+        }
         self.fx.render_screen(d, &self.sprites);
         self.ui.banner.render(d);
-        self.ui.minimap.render_corner(
-            d,
-            &self.world,
-            &self.sprites,
-            self.current_map,
-            self.gems,
-            &self.flags,
-        );
+        if self.current_map != MapId::Dungeon {
+            self.ui.minimap.render_corner(
+                d,
+                &self.world,
+                &self.sprites,
+                self.current_map,
+                self.gems,
+                &self.flags,
+            );
+        }
         self.ui.dialog.render(d, &self.sprites);
         ui::shop::render(d, &self.ui.shop, &self.flags);
-        self.ui.minimap.render_pause(
-            d,
-            &self.world,
-            &self.sprites,
-            self.current_map,
-            self.gems,
-            &self.flags,
-        );
+        if self.current_map == MapId::Dungeon && self.ui.minimap.pause_open {
+            ui::dungeon_map::render_pause(d, self);
+        } else {
+            self.ui.minimap.render_pause(
+                d,
+                &self.world,
+                &self.sprites,
+                self.current_map,
+                self.gems,
+                &self.flags,
+            );
+        }
 
         let alpha = fade_alpha(&self.mode);
         if alpha > 0.01 {
@@ -577,7 +494,7 @@ fn integrate_non_player(world: &mut World) {
             | EntityKind::Npc
             | EntityKind::Chest
             | EntityKind::Gem
-            | EntityKind::Bomb => {}
+            | EntityKind::Bomb | EntityKind::Boomerang => {}
             EntityKind::Pickup
             | EntityKind::SwordBeam
             | EntityKind::DebugShot

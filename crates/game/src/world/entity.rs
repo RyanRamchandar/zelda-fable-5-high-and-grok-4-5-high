@@ -5,6 +5,8 @@ use content::text::{NpcId, TextId};
 
 use crate::math::{Dir4, Vec2};
 
+use super::entity_data;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct EntityId {
     pub index: u32,
@@ -35,6 +37,7 @@ pub enum EntityKind {
     Chest,
     Gem,
     Bomb,
+    Boomerang,
 }
 
 /// Collision layer bits (bitmask).
@@ -93,6 +96,7 @@ pub enum EntityData {
     Chest(ChestData),
     Gem(GemData),
     Bomb(BombData),
+    Boomerang(BoomerangData),
 }
 
 #[derive(Clone, Debug)]
@@ -160,7 +164,7 @@ pub struct PlayerData {
     pub style_points: f32,
     pub style_rank: u8,
     pub style_pulse: u8,
-    pub verb_cooldowns: [u16; 6],
+    pub verb_cooldowns: [u16; 7],
     pub combat_timer: u16,
     pub no_dmg_streak: u16,
     pub out_of_combat: u16,
@@ -196,7 +200,7 @@ impl PlayerData {
             style_points: 0.0,
             style_rank: 0,
             style_pulse: 0,
-            verb_cooldowns: [0; 6],
+            verb_cooldowns: [0; 7],
             combat_timer: 0,
             no_dmg_streak: 0,
             out_of_combat: 0,
@@ -250,143 +254,11 @@ pub struct BeamData {
     pub hit: bool,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum SlimeState {
-    Idle,
-    Chase,
-    LungeWindup,
-    Lunge,
-    Recover,
-}
-
-#[derive(Clone, Debug)]
-pub struct SlimeData {
-    pub spawn_telegraph: u16,
-    pub state: SlimeState,
-    pub timer: u16,
-    pub hop_phase: u16,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum BatState {
-    Hover,
-    SwoopTelegraph,
-    Swoop,
-    Climb,
-}
-
-#[derive(Clone, Debug)]
-pub struct BatData {
-    pub spawn_telegraph: u16,
-    pub state: BatState,
-    pub timer: u16,
-    pub hover_phase: f32,
-    pub swoop_origin: Vec2,
-    pub swoop_target: Vec2,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum OctorokState {
-    Idle,
-    SpitTelegraph,
-    Spit,
-    Hide,
-}
-
-#[derive(Clone, Debug)]
-pub struct OctorokData {
-    pub spawn_telegraph: u16,
-    pub state: OctorokState,
-    pub timer: u16,
-    pub cycle: u16,
-}
-
-#[derive(Clone, Debug)]
-pub struct RockData {
-    pub dir: Vec2,
-    pub damage: f32,
-    pub from_player: bool,
-    pub hit: bool,
-    pub swing_id: u32,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum RaiderSpearState {
-    Idle,
-    Approach,
-    PokeTelegraph,
-    Thrust,
-    Guard,
-}
-
-#[derive(Clone, Debug)]
-pub struct RaiderSpearData {
-    pub spawn_telegraph: u16,
-    pub state: RaiderSpearState,
-    pub timer: u16,
-    pub patrol_phase: f32,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum RaiderTorchState {
-    Idle,
-    ThrowTelegraph,
-    Cooldown,
-}
-
-#[derive(Clone, Debug)]
-pub struct RaiderTorchData {
-    pub spawn_telegraph: u16,
-    pub state: RaiderTorchState,
-    pub timer: u16,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum WispState {
-    Visible,
-    FadeOut,
-    Phased,
-    FadeIn,
-}
-
-#[derive(Clone, Debug)]
-pub struct WispData {
-    pub spawn_telegraph: u16,
-    pub state: WispState,
-    pub timer: u16,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum SkeletonState {
-    Walk,
-    PokeTelegraph,
-    Lunge,
-    Stagger,
-}
-
-#[derive(Clone, Debug)]
-pub struct SkeletonData {
-    pub spawn_telegraph: u16,
-    pub state: SkeletonState,
-    pub timer: u16,
-    pub shield_up: bool,
-    /// Remaining stagger duration when entering `Stagger`.
-    pub stagger_len: u16,
-}
-
-#[derive(Clone, Debug)]
-pub struct TorchProjData {
-    pub dir: Vec2,
-    pub life: u16,
-    pub age: u16,
-    pub hit: bool,
-}
-
-#[derive(Clone, Debug)]
-pub struct TorchFlameData {
-    pub life: u16,
-    pub tick: u16,
-}
+pub use entity_data::{
+    BatData, BatState, BoomerangData, BoomerangPhase, OctorokData, OctorokState, RaiderSpearData,
+    RaiderSpearState, RaiderTorchData, RaiderTorchState, RockData, SkeletonData, SkeletonState,
+    SlimeData, SlimeState, TorchFlameData, TorchProjData, WispData, WispState,
+};
 
 #[derive(Clone, Debug)]
 pub struct Entity {

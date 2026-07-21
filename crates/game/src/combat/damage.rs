@@ -49,7 +49,7 @@ pub fn apply_attack_hit(
         if entity.health.map(|h| h.iframes > 0).unwrap_or(true) && !hidden && !guarded {
             return;
         }
-        if hidden || guarded {
+        if (hidden || guarded) && attack != AttackKind::Boomerang {
             Some(if guarded {
                 SfxId::GuardClank
             } else {
@@ -89,6 +89,16 @@ pub fn apply_attack_hit(
         (killed, kind, death_pos, heavy, is_dummy)
     };
 
+    if attack == AttackKind::Boomerang {
+        crate::enemies::stun(world, target, 60);
+        world.push_event(WorldEvent::StyleAction(StyleVerb::BoomerangStun));
+        if matches!(
+            world.get(target).map(|e| e.kind),
+            Some(EntityKind::Skeleton)
+        ) {
+            crate::enemies::skeleton::stagger(world, target);
+        }
+    }
     world.hitstop = if heavy {
         tuning::HITSTOP_HEAVY
     } else {
@@ -116,7 +126,7 @@ pub fn apply_attack_hit(
         AttackKind::Slash | AttackKind::Backslash | AttackKind::Beam | AttackKind::DebugShot => {
             Some(StyleVerb::Slash)
         }
-        AttackKind::Bomb => None,
+        AttackKind::Bomb | AttackKind::Boomerang => None,
     } {
         world.push_event(WorldEvent::StyleAction(verb));
     }
@@ -291,7 +301,7 @@ fn reflect_projectiles_near(world: &mut World, center: Vec2) {
             | EntityKind::Npc
             | EntityKind::Chest
             | EntityKind::Gem
-            | EntityKind::Bomb => {}
+            | EntityKind::Bomb | EntityKind::Boomerang => {}
         }
     }
 }

@@ -108,6 +108,22 @@ pub fn switch_map(game: &mut Game, target: MapId, entry: u8) {
     game.flags = persist.flags;
     game.puzzle = crate::puzzle::PuzzleState::for_map(target);
     game.chunk_cache_reset = true;
+    game.dungeon_puzzle = None;
+    if target == MapId::Dungeon {
+        // Always lock sanctum miniboss group this phase.
+        if !game
+            .spawner
+            .locked_groups
+            .contains(&content::flags::GRP_DNG_SANCTUM)
+        {
+            game.spawner
+                .locked_groups
+                .push(content::flags::GRP_DNG_SANCTUM);
+        }
+        crate::rooms::on_enter_dungeon(game);
+    } else {
+        crate::rooms::clear(game);
+    }
 }
 
 fn extract_persist(game: &Game) -> PlayerPersist {

@@ -123,6 +123,37 @@ pub const T_BARRICADE: u16 = 264;
 pub const T_CRANK: u16 = 265;
 pub const T_BRIDGE_LOWERED: u16 = 266;
 
+// —— 280–309 Phase 3A dungeon ——
+pub const D_FLOOR_A: u16 = 280;
+pub const D_FLOOR_B: u16 = 281;
+pub const D_FLOOR_RUNE: u16 = 282;
+pub const D_WALL: u16 = 283;
+pub const D_WALL_TOP: u16 = 284;
+pub const D_PIT: u16 = 285;
+pub const D_WATER: u16 = 286;
+pub const D_WATER_EDGE: u16 = 287;
+pub const D_STAIRS: u16 = 288;
+pub const D_DOOR_OPEN: u16 = 289;
+pub const D_DOOR_LOCKED: u16 = 290;
+pub const D_DOOR_BOSS: u16 = 291;
+pub const D_SHUTTER: u16 = 292;
+pub const D_LIFT: u16 = 293;
+pub const D_CRYSTAL_BLUE: u16 = 294;
+pub const D_CRYSTAL_AMBER: u16 = 295;
+pub const D_GATE_BLUE_UP: u16 = 296;
+pub const D_GATE_BLUE_DOWN: u16 = 297;
+pub const D_GATE_AMBER_UP: u16 = 298;
+pub const D_GATE_AMBER_DOWN: u16 = 299;
+pub const D_TORCH_LIT: u16 = 300;
+pub const D_TORCH_UNLIT: u16 = 301;
+pub const D_BRAZIER_ETERNAL: u16 = 302;
+pub const D_RUNE_1: u16 = 303;
+pub const D_RUNE_2: u16 = 304;
+pub const D_RUNE_3: u16 = 305;
+pub const D_SEAL_DOOR: u16 = 306;
+pub const D_SEAL_BROKEN: u16 = 307;
+// 308–309 spare
+
 /// Compatibility aliases (Phase 1 consumers / arena builder).
 pub const FLOOR: u16 = T_FLOOR_A;
 pub const WALL: u16 = T_WALL;
@@ -260,6 +291,34 @@ pub fn tile_info(id: u16) -> &'static TileInfo {
         T_BARRICADE => &TI_BARRICADE,
         T_CRANK => &TI_CRANK,
         T_BRIDGE_LOWERED => &TI_BRIDGE_LOWERED,
+        D_FLOOR_A => &TI_D_FLOOR_A,
+        D_FLOOR_B => &TI_D_FLOOR_B,
+        D_FLOOR_RUNE => &TI_D_FLOOR_RUNE,
+        D_WALL => &TI_D_WALL,
+        D_WALL_TOP => &TI_D_WALL_TOP,
+        D_PIT => &TI_D_PIT,
+        D_WATER => &TI_D_WATER,
+        D_WATER_EDGE => &TI_D_WATER_EDGE,
+        D_STAIRS => &TI_D_STAIRS,
+        D_DOOR_OPEN => &TI_D_DOOR_OPEN,
+        D_DOOR_LOCKED => &TI_D_DOOR_LOCKED,
+        D_DOOR_BOSS => &TI_D_DOOR_BOSS,
+        D_SHUTTER => &TI_D_SHUTTER,
+        D_LIFT => &TI_D_LIFT,
+        D_CRYSTAL_BLUE => &TI_D_CRYSTAL_BLUE,
+        D_CRYSTAL_AMBER => &TI_D_CRYSTAL_AMBER,
+        D_GATE_BLUE_UP => &TI_D_GATE_BLUE_UP,
+        D_GATE_BLUE_DOWN => &TI_D_GATE_BLUE_DOWN,
+        D_GATE_AMBER_UP => &TI_D_GATE_AMBER_UP,
+        D_GATE_AMBER_DOWN => &TI_D_GATE_AMBER_DOWN,
+        D_TORCH_LIT => &TI_D_TORCH_LIT,
+        D_TORCH_UNLIT => &TI_D_TORCH_UNLIT,
+        D_BRAZIER_ETERNAL => &TI_D_BRAZIER_ETERNAL,
+        D_RUNE_1 => &TI_D_RUNE_1,
+        D_RUNE_2 => &TI_D_RUNE_2,
+        D_RUNE_3 => &TI_D_RUNE_3,
+        D_SEAL_DOOR => &TI_D_SEAL_DOOR,
+        D_SEAL_BROKEN => &TI_D_SEAL_BROKEN,
         _ => &VOID,
     }
 }
@@ -352,6 +411,34 @@ pub fn all_tile_ids() -> &'static [u16] {
         T_BARRICADE,
         T_CRANK,
         T_BRIDGE_LOWERED,
+        D_FLOOR_A,
+        D_FLOOR_B,
+        D_FLOOR_RUNE,
+        D_WALL,
+        D_WALL_TOP,
+        D_PIT,
+        D_WATER,
+        D_WATER_EDGE,
+        D_STAIRS,
+        D_DOOR_OPEN,
+        D_DOOR_LOCKED,
+        D_DOOR_BOSS,
+        D_SHUTTER,
+        D_LIFT,
+        D_CRYSTAL_BLUE,
+        D_CRYSTAL_AMBER,
+        D_GATE_BLUE_UP,
+        D_GATE_BLUE_DOWN,
+        D_GATE_AMBER_UP,
+        D_GATE_AMBER_DOWN,
+        D_TORCH_LIT,
+        D_TORCH_UNLIT,
+        D_BRAZIER_ETERNAL,
+        D_RUNE_1,
+        D_RUNE_2,
+        D_RUNE_3,
+        D_SEAL_DOOR,
+        D_SEAL_BROKEN,
     ]
 }
 
@@ -485,3 +572,32 @@ static TI_PLATE_DOWN: TileInfo = walk("prop_plate_down");
 static TI_BARRICADE: TileInfo = solid("prop_barricade");
 static TI_CRANK: TileInfo = solid("prop_crank");
 static TI_BRIDGE_LOWERED: TileInfo = walk("prop_bridge_lowered");
+
+static TI_D_FLOOR_A: TileInfo = walk("d_floor_a");
+static TI_D_FLOOR_B: TileInfo = walk("d_floor_b");
+static TI_D_FLOOR_RUNE: TileInfo = walk("d_floor_rune");
+static TI_D_WALL: TileInfo = solid("d_wall");
+static TI_D_WALL_TOP: TileInfo = solid("d_wall_top");
+static TI_D_PIT: TileInfo = solid("d_pit");
+static TI_D_WATER: TileInfo = anim_water("d_water", 2, 16);
+static TI_D_WATER_EDGE: TileInfo = walk("d_water_edge");
+static TI_D_STAIRS: TileInfo = walk("d_stairs");
+static TI_D_DOOR_OPEN: TileInfo = walk("d_door_open");
+static TI_D_DOOR_LOCKED: TileInfo = solid("d_door_locked");
+static TI_D_DOOR_BOSS: TileInfo = solid("d_door_boss");
+static TI_D_SHUTTER: TileInfo = solid("d_shutter");
+static TI_D_LIFT: TileInfo = TileInfo { sprite: "d_lift", frames: 2, anim_rate: 12, flags: 0 };
+static TI_D_CRYSTAL_BLUE: TileInfo = solid("d_crystal_blue");
+static TI_D_CRYSTAL_AMBER: TileInfo = solid("d_crystal_amber");
+static TI_D_GATE_BLUE_UP: TileInfo = solid("d_gate_blue_up");
+static TI_D_GATE_BLUE_DOWN: TileInfo = walk("d_gate_blue_down");
+static TI_D_GATE_AMBER_UP: TileInfo = solid("d_gate_amber_up");
+static TI_D_GATE_AMBER_DOWN: TileInfo = walk("d_gate_amber_down");
+static TI_D_TORCH_LIT: TileInfo = TileInfo { sprite: "d_torch_lit", frames: 2, anim_rate: 10, flags: flags::SOLID };
+static TI_D_TORCH_UNLIT: TileInfo = solid("d_torch_unlit");
+static TI_D_BRAZIER_ETERNAL: TileInfo = TileInfo { sprite: "d_brazier_eternal", frames: 2, anim_rate: 10, flags: flags::SOLID };
+static TI_D_RUNE_1: TileInfo = walk("d_rune_1");
+static TI_D_RUNE_2: TileInfo = walk("d_rune_2");
+static TI_D_RUNE_3: TileInfo = walk("d_rune_3");
+static TI_D_SEAL_DOOR: TileInfo = solid("d_seal_door");
+static TI_D_SEAL_BROKEN: TileInfo = walk("d_seal_broken");

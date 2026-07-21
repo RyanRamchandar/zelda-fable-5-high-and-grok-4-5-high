@@ -8,19 +8,23 @@ use crate::combat::energy;
 use crate::combat::style::{self, StyleVerb};
 use crate::combat::tuning;
 use crate::fx::FxKind;
-use crate::items::bombs;
+use crate::items::{bombs, boomerang};
 use crate::math::{Dir4, Vec2};
+use crate::save_data::has_flag;
 use crate::world::entity::{EntityData, EntityId, EntityKind, PlayerState};
 use crate::world::physics;
 use crate::world::{World, WorldEvent};
 use content::audio::sfx::SfxId;
+use content::flags;
 
 use sword::{update_beams, update_sword};
 
-pub fn update(world: &mut World, input: &InputState) {
+pub fn update(world: &mut World, input: &InputState, flags: &[u16]) {
     let pid = world.player_id;
     update_shield_and_dash_intent(world, pid, input);
-    update_item_cycle(world, pid, input);
+    if input.buttons[BUTTON_CYCLE].pressed {
+        cycle_items(world, pid, flags);
+    }
     update_movement(world, pid, input);
     let (facing, center) = {
         let Some(p) = world.get(pid) else {
@@ -35,21 +39,35 @@ pub fn update(world: &mut World, input: &InputState) {
     check_fountain(world, pid);
 }
 
-fn update_item_cycle(world: &mut World, pid: EntityId, input: &InputState) {
-    if !input.buttons[BUTTON_CYCLE].pressed {
-        return;
-    }
-    let mut sfx = SfxId::Refused;
-    if let Some(p) = world.get_mut(pid) {
-        if let EntityData::Player(pd) = &mut p.data {
+/// Cycle B-items: bombs (if bag) ↔ boomerang (if flag).
+fn cycle_items(world: &mut World, pid: EntityId, flag_list: &[u16]) {
+    let mut unlocked = Vec::new();
+    if let Some(p) = world.get(pid) {
+        if let EntityData::Player(pd) = &p.data {
             if pd.bomb_cap > 0 {
-                pd.selected_item = 1;
-                pd.item_cycle_flash = 12;
-                sfx = SfxId::ItemCycle;
+                unlocked.push(1u8);
             }
         }
     }
-    world.push_event(WorldEvent::Sfx(sfx));
+    if has_flag(flag_list, flags::ITEM_BOOMERANG) {
+        unlocked.push(2);
+    }
+    if unlocked.is_empty() {
+        world.push_event(WorldEvent::Sfx(SfxId::Refused));
+        return;
+    }
+    if let Some(p) = world.get_mut(pid) {
+        if let EntityData::Player(pd) = &mut p.data {
+            let cur = unlocked.iter().position(|&i| i == pd.selected_item);
+            let next = match cur {
+                Some(i) => unlocked[(i + 1) % unlocked.len()],
+                None => unlocked[0],
+            };
+            pd.selected_item = next;
+            pd.item_cycle_flash = 12;
+        }
+    }
+    world.push_event(WorldEvent::Sfx(SfxId::ItemCycle));
 }
 
 fn update_shield_and_dash_intent(world: &mut World, pid: EntityId, input: &InputState) {
@@ -60,6 +78,7 @@ fn update_shield_and_dash_intent(world: &mut World, pid: EntityId, input: &Input
     let mut dust = None;
     let mut sfx_dash = false;
     let mut place_bomb = false;
+    let mut throw_boom = false;
 
     {
         let Some(p) = world.get_mut(pid) else {
@@ -79,11 +98,13 @@ fn update_shield_and_dash_intent(world: &mut World, pid: EntityId, input: &Input
         if !item
             && pd.shield_ticks >= 1
             && pd.shield_ticks <= tuning::ITEM_TAP_MAX_TICKS
-            && pd.selected_item == 1
-            && pd.bombs > 0
             && can_shield
         {
-            place_bomb = true;
+            if pd.selected_item == 1 && pd.bombs > 0 {
+                place_bomb = true;
+            } else if pd.selected_item == 2 {
+                throw_boom = true;
+            }
         }
         if item && can_shield {
             pd.shield_held = true;
@@ -122,6 +143,9 @@ fn update_shield_and_dash_intent(world: &mut World, pid: EntityId, input: &Input
 
     if place_bomb {
         let _ = bombs::try_place(world);
+    }
+    if throw_boom && !boomerang::try_throw(world) {
+        boomerang::note_catch_buffer(world);
     }
     if denied {
         world.push_event(WorldEvent::EnergyDenied);

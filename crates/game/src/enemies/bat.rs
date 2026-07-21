@@ -35,6 +35,7 @@ pub fn spawn(world: &mut World, pos: Vec2) -> EntityId {
             hover_phase,
             swoop_origin: pos,
             swoop_target: pos,
+            stun_ticks: 0,
         }),
         alive: true,
     })
@@ -53,6 +54,19 @@ pub fn update_one(world: &mut World, id: EntityId) {
     if telegraph > 0 {
         tick_spawn(world, id);
         return;
+    }
+    {
+        use crate::world::entity::EntityData as ED;
+        let stunned = matches!(world.get(id).map(|e| &e.data), Some(ED::Bat(d)) if d.stun_ticks > 0);
+        if stunned {
+            if let Some(e) = world.get_mut(id) {
+                e.vel = crate::math::Vec2::ZERO;
+                if let ED::Bat(d) = &mut e.data {
+                    d.stun_ticks = d.stun_ticks.saturating_sub(1);
+                }
+            }
+            return;
+        }
     }
 
     let Some(ppos) = ai::player_pos(world) else {

@@ -2,6 +2,7 @@
 
 mod barricades;
 pub(crate) mod chimes;
+pub(crate) mod dungeon;
 mod plates;
 
 use content::audio::sfx::SfxId;
@@ -136,15 +137,22 @@ pub fn restore(world: &mut World, flags: &[u16]) {
 }
 
 pub fn update(game: &mut Game) {
-    let map = game.current_map;
-    let Some(def) = puzzles::for_map(map) else {
+    prune_hit_tiles(&mut game.puzzle);
+    if game.current_map == MapId::Dungeon {
+        dungeon::update(game);
+        return;
+    }
+    let Some(def) = puzzles::for_map(game.current_map) else {
         return;
     };
-    prune_hit_tiles(&mut game.puzzle);
     process_hits(game, def);
     plates::update_plates(game, def);
     update_block_push(game, def);
     chimes::tick_finale_expiry(game, def);
+}
+
+pub(crate) fn mark_tile_hit_pub(puzzle: &mut PuzzleState, swing_id: u32, tx: u32, ty: u32) -> bool {
+    mark_tile_hit(puzzle, swing_id, tx, ty)
 }
 
 fn prune_hit_tiles(puzzle: &mut PuzzleState) {
@@ -183,6 +191,9 @@ fn process_hits(game: &mut Game, def: &OverworldPuzzles) {
                 (EntityKind::OctorokRock, EntityData::Rock(r)) => {
                     (EntityKind::OctorokRock, e.center(), r.from_player, r.hit, 0)
                 }
+                (EntityKind::Boomerang, EntityData::Boomerang(b)) => {
+                    (EntityKind::Boomerang, e.center(), true, false, b.throw_id)
+                }
                 _ => continue,
             }
         };
@@ -190,17 +201,18 @@ fn process_hits(game: &mut Game, def: &OverworldPuzzles) {
             continue;
         }
         let half = Vec2::new(2.0, 2.0);
-        let marked = try_hit_tiles(
-            game,
-            def,
-            center,
-            half,
-            false,
-            0.0,
-            swing_id.wrapping_add(0xB0B0),
-            AttackKind::Beam,
-        );
-        if marked {
+        let ak = if kind == EntityKind::Boomerang {
+            AttackKind::Boomerang
+        } else {
+            AttackKind::Beam
+        };
+        let sid = if kind == EntityKind::Boomerang {
+            swing_id
+        } else {
+            swing_id.wrapping_add(0xB0B0)
+        };
+        let marked = try_hit_tiles(game, def, center, half, false, 0.0, sid, ak);
+        if marked && kind != EntityKind::Boomerang {
             if let Some(e) = game.world.get_mut(id) {
                 match &mut e.data {
                     EntityData::Beam(b) => b.hit = true,
@@ -289,7 +301,11 @@ fn barricade_damage(kind: AttackKind) -> i32 {
     match kind {
         AttackKind::Finisher | AttackKind::Spin => 2,
         AttackKind::Bomb => 99,
-        AttackKind::Slash | AttackKind::Backslash | AttackKind::Beam | AttackKind::DebugShot => 1,
+        AttackKind::Slash
+        | AttackKind::Backslash
+        | AttackKind::Beam
+        | AttackKind::DebugShot
+        | AttackKind::Boomerang => 1,
     }
 }
 
