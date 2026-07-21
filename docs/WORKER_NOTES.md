@@ -299,3 +299,43 @@ GEM_*, GROUP_CAMP_GUARD, GRP_* encounter groups.
 **YES** — soft critical path + content fill seams are in; 2C can swap puzzle
 mechanics onto placed props/flags without map surgery. Recommend human play
 of elder→3 gems→seal before 2C polish pass.
+
+## Phase 2C planning — 2026-07-21 (Planner, Fable 5)
+
+- Phase 2B accepted at `ea4edd9`. Phase 2C is one brief
+  (`WORKER_BRIEF_PHASE2C.md`) with two **sequential** parts: **2C-A**
+  (puzzle layer + real gem gates + bombs/B-item + shop economy + bomb wall /
+  barricades / bridge crank) then **2C-B** (raider spear/torch + wisp +
+  skeleton families, camp 3-wave war-chest battle, encounter re-dress).
+  2C-B is blocked on 2C-A's completion entry here; 2C-A's frozen seams are
+  listed in its DoD §7.
+- Key design decision: **no boomerang until Phase 3** (it's inside the
+  shrine), so every 2C puzzle is solvable with the current kit — chimes and
+  the crank answer *any* player hit (sword swing, sword beam, reflected
+  octorok rock); the finale demands 3 chimes inside a 4 s window (dash
+  between them). Phase 3's boomerang retro-enables one-throw solves through
+  the same tool-agnostic hit checks, so nothing is special-cased.
+- Key reality deltas the brief encodes: there is **no entity-vs-entity
+  solidity** (physics is AABB-vs-tile only) → all gates/blocks/plates/
+  barricades/cranks are *tiles* mutated via `World::set_tile` (dirty-chunk
+  seam), not entities; `active_attacks` clears inside `resolve_hits` →
+  `puzzle::update` slots between `integrate_non_player` and
+  `combat::resolve_hits`; `MapId::Cave` codec clamps to 2 caves → extended
+  for the bomb cave `Cave(2)`; `game/src/lib.rs` sits at the 600-line cap →
+  2C-A M1 extracts debug helpers first.
+- Controls decision (DECISIONS §5 spirit, logged here): shield stays
+  hold-Item (K/pad 2); B-item fires on a ≤8-tick *tap* of Item; cycle is a
+  new `BUTTON_CYCLE` (Q / pad LB+RB) — the only engine change 2C may make.
+  Touch parity for items is deferred to Phase 4 (touch has joystick +
+  attack + dash today).
+- Camp battle uses chained spawner groups (41→42→43 via a `locked_groups`
+  set + `GroupCleared` unlock), NOT the Arena WaveDirector — the spawner's
+  group lifecycle already gives dormant/dead/respawn semantics for free.
+- New id allocations: catalog tiles 260–279 (gate, block, plates, barricade,
+  crank, lowered bridge), flags 90–98 (+ `CHEST_RUINS_BONUS = 20`), SFX
+  appends for chime/plate/gate/block/barricade/crank/bomb/shop/cycle.
+- Phase 3 briefs (dungeon/boomerang/boss split) will be written **after 2C
+  lands** — they depend on 2C's puzzle hit-check API, `BUTTON_CYCLE`
+  seam, and skeleton stagger hook, so writing them now would repeat the
+  ARCHITECTURE-vs-reality drift we've avoided by briefing against real code.
+  PHASE_PLAN Phase 2/3 sections updated accordingly.

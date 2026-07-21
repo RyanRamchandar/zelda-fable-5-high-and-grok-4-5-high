@@ -92,11 +92,25 @@ skin, debug viewer. Seam contract frozen at 1A completion (WORKER_NOTES entry).
   from the Phase 1 roster, overworld minimap (corner + pause, fog persisted,
   POIs, objective marker), 10 telegraphed secrets + 3 heart pieces.
 
-Deferred to **Phase 2C** (planner briefs after 2B; folded toward Gate B):
-gem *puzzles* (wind chimes, plate court, camp wave-battle with destructible
-barricades), shop economy UI, wisp/skeleton/raider enemy families, bomb walls
-going live, broken-bridge crank. 2B places all their locations/flags so 2C is
-content swap-in, not map surgery.
+- **Phase 2C** (`WORKER_BRIEF_PHASE2C.md`, starts only after 2B landed —
+  which it has at `ea4edd9`) — interactivity depth, split into two
+  **sequential** parts inside one brief:
+  - **2C-A** — `game::puzzle` tile-interaction layer (`content::puzzles`
+    site data), the real gem gates: grove wind-chime curriculum (2 taught
+    single-chime gates + 3-chimes-in-one-window finale sealing the Courage
+    Gem) and ruins plate-and-block court (2 plates + 2 pushable blocks
+    gating the Wisdom Gem), bombs + B-item seam (tap-Item fires, hold-Item
+    still shields, Q/LB-RB cycles; `AttackKind::Bomb`), grove bomb wall →
+    `Cave(2)` rupee cache, barricade destructibility, shop economy UI
+    (bombs 10₹×5, bomb bag 100₹, **heart piece #4** 200₹, tunic teased),
+    broken-bridge crank shortcut. All puzzles solvable with the current kit
+    (no boomerang until Phase 3 — puzzle hit-checks are tool-agnostic so
+    the boomerang retro-enables one-throw solves for free).
+  - **2C-B** — four new enemy families (raider spear, raider torch, wisp,
+    skeleton) with art + AI + SFX, camp 3-wave war-chest battle via chained
+    spawner groups (41→42→43) behind breakable barricades upgrading the
+    Power Gem gate, region encounter re-dress (camp reads raider, ruins
+    gains wisps/skeletons), difficulty/feel pass.
 
 **Acceptance criteria**
 1. Walk village → all six regions with zero loading/screen transitions outdoors; 60 fps
@@ -106,12 +120,22 @@ content swap-in, not map surgery.
 4. Minimap fog-reveals and persists; objective marker tracks gem/shrine progression (2B).
 5. Every region visually distinct and every interactable legible; ≥8 secrets
    placed and telegraphed; encounters match region identity (2B).
+6. All three gems behind their real mechanisms: chime finale, 3-wave camp
+   battle, plate court; puzzle states reset on reload, persist when solved (2C).
+7. Bombs + shop economy live: purchases persist, heart piece #4 completes the
+   max-heart set, bomb wall and bridge crank open permanently (2C).
+8. New families telegraphed and distinct; ≤12 active AI; ~60 fps in camp
+   wave 3 (2C).
 
 **Ownership:** 2A = `content::maps` v2 + terrain art + `engine::chunks` +
 `game::{state,world::spawner,draw_world,physics,camera,save_data,ui::banner}`.
 2B = placement/props/NPC art + `content::text` + `game::ui::{dialog,minimap}` +
-interact/chests + spawner groups + flag registry. Sequential — 2B edits files
-2A owns, so no parallel run.
+interact/chests + spawner groups + flag registry. 2C-A = `game::{puzzle,
+items::bombs,ui::shop}` + `content::{puzzles,art::props_puzzle}` + catalog
+ids 260–279 + flags 90–98 + `engine::input` BUTTON_CYCLE only. 2C-B =
+`game::enemies::{raider,wisp,skeleton}` + `content::art::enemies_act1b` +
+spawner wave-chain + placement re-dress. All sequential — each part edits
+files the previous one owns; no parallel runs anywhere in Phase 2.
 
 ---
 
@@ -122,6 +146,13 @@ dungeon minimap with reciprocity, keys, Gale Boomerang item + full curriculum
 (crystals, gates, ordered-seal rooms), ironshell miniboss, **Granite Warden** with all
 3 phases + cinematic intro, credits stub, victory state, checkpoints. B-item cycling
 with bombs + boomerang.
+
+Planner writes the Phase 3 briefs **after 2C lands** — they must be authored
+against 2C's real code: the `game::puzzle` hit-check layer (boomerang = a new
+source of the same chime/crank/plate hit events, retro-enabling overworld
+one-throw solves), `BUTTON_CYCLE` B-item seam (boomerang = selected_item 2),
+the skeleton `stagger` hook (boomerang stun), the `TUNIC_UNLOCKED` shop flag
+(post-boss), and the ruins far-switch bonus site.
 
 **Acceptance criteria**
 1. Full critical path: New Game → 3 gems → shrine → boomerang → 2 seals → Warden →
