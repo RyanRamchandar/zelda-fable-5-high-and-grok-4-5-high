@@ -67,8 +67,13 @@ pub const BOOT_DARK: u8 = 55; // S
 pub const CAPE: u8 = 56; // T
 pub const EYE_WHITE: u8 = 57; // U
 pub const EYE_DARK: u8 = 58; // V
+// Phase 2A terrain additions (charset W–Z)
+pub const DIRT_LIGHT: u8 = 59; // W
+pub const DIRT_ASH: u8 = 60; // X
+pub const SAND: u8 = 61; // Y
+pub const WOOD: u8 = 62; // Z
 
-const PALETTE: [[u8; 4]; 59] = [
+const PALETTE: [[u8; 4]; 63] = [
     [0, 0, 0, 0],         // 0 .
     [120, 220, 96, 255],  // 1 0 tunic light
     [64, 176, 64, 255],   // 2 1 tunic
@@ -128,6 +133,10 @@ const PALETTE: [[u8; 4]; 59] = [
     [40, 96, 160, 255],   // 56 T cape / shield
     [248, 248, 255, 255], // 57 U eye white
     [16, 12, 20, 255],    // 58 V eye dark
+    [168, 120, 72, 255],  // 59 W dirt light
+    [96, 80, 64, 255],    // 60 X dirt / ash
+    [212, 188, 120, 255], // 61 Y sand
+    [120, 80, 48, 255],   // 62 Z wood
 ];
 
 /// Remap selected palette indices when decoding a strip (enemy tints, variants).

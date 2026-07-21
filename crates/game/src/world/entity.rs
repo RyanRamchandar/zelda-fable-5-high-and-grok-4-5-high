@@ -70,7 +70,7 @@ pub enum EntityData {
     Rock(RockData),
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum PlayerState {
     Idle,
     Swing { stage: u8, tick: u16 },
@@ -78,6 +78,7 @@ pub enum PlayerState {
     Spin { tick: u16 },
     Dash { tick: u16 },
     DashRecovery { tick: u16 },
+    LedgeHop { tick: u16, from: Vec2, to: Vec2 },
 }
 
 #[derive(Clone, Debug)]

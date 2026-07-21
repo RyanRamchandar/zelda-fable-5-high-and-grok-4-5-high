@@ -219,6 +219,9 @@ pub fn update_sword(
                     player.vel = Vec2::ZERO;
                 }
             }
+            PlayerState::LedgeHop { .. } => {
+                // Input locked during ledge hop.
+            }
         }
     }
 

@@ -1,6 +1,8 @@
-//! Atlas-backed map + entity drawing.
+//! Data-driven map rendering with optional chunk cache.
 
-use content::maps::{FOUNTAIN, TILE_PX, WALL};
+use content::maps::{catalog, TILE_PX};
+use engine::atlas::SpriteHandle;
+use engine::chunks::{ChunkCache, ChunkKey, CHUNK_TILES};
 use engine::render::Draw;
 
 use crate::assets::SpriteMap;
@@ -8,75 +10,284 @@ use crate::math::Dir4;
 use crate::world::entity::{Entity, EntityData, EntityKind, PlayerState};
 use crate::world::World;
 
-pub fn render_map(d: &mut Draw, world: &World, sprites: &SpriteMap) {
-    let map = &world.map;
+pub struct TileSprites {
+    pub by_id: Vec<Option<SpriteHandle>>,
+}
+
+impl TileSprites {
+    pub fn build(sprites: &SpriteMap) -> Self {
+        let max = catalog::all_tile_ids()
+            .iter()
+            .copied()
+            .max()
+            .unwrap_or(0) as usize
+            + 1;
+        let mut by_id = vec![None; max];
+        for &id in catalog::all_tile_ids() {
+            let info = catalog::tile_info(id);
+            if info.sprite.is_empty() {
+                continue;
+            }
+            by_id[id as usize] = sprites.get(info.sprite);
+        }
+        Self { by_id }
+    }
+
+    fn get(&self, id: u16) -> Option<SpriteHandle> {
+        self.by_id.get(id as usize).copied().flatten()
+    }
+}
+
+pub struct MapRenderStats {
+    pub chunks_ready: usize,
+    pub chunks_budget: usize,
+    pub bakes: u32,
+    pub direct: bool,
+}
+
+/// Bake + blit visible chunks; falls back to per-tile when cache is None.
+pub fn render_map(
+    d: &mut Draw,
+    world: &mut World,
+    tiles: &TileSprites,
+    cache: &mut Option<ChunkCache>,
+    prebake: bool,
+    stats: &mut MapRenderStats,
+) {
+    // Drain dirty.
+    if let Some(c) = cache.as_mut() {
+        for key in world.dirty_chunks.drain(..) {
+            c.invalidate(key);
+        }
+        c.begin_frame(world.tick);
+    } else {
+        world.dirty_chunks.clear();
+    }
+
     let cam = world.camera.offset();
-    let x0 = ((cam.x / TILE_PX).floor() as i32).max(0) as u32;
-    let y0 = ((cam.y / TILE_PX).floor() as i32).max(0) as u32;
-    let x1 = ((cam.x + 480.0) / TILE_PX).ceil() as u32 + 1;
-    let y1 = ((cam.y + 270.0) / TILE_PX).ceil() as u32 + 1;
-    let x1 = x1.min(map.width);
-    let y1 = y1.min(map.height);
+    let (cx0, cy0, cx1, cy1) = visible_chunk_range(&world.map, cam);
 
-    let floor_a = sprites.get("floor_a");
-    let floor_b = sprites.get("floor_b");
-    let wall_face = sprites.get("wall_face");
-    let wall_top = sprites.get("wall_top");
-    let fountain = sprites.get("fountain");
-    let pillar = sprites.get("pillar");
+    if let Some(c) = cache.as_mut() {
+        stats.direct = false;
+        stats.chunks_budget = c.budget();
+        let bake_cap = if prebake { 32 } else { 2 };
+        let mut baked = 0u32;
+        for layer in [0u8, 1u8] {
+            for cy in cy0..=cy1 {
+                for cx in cx0..=cx1 {
+                    let key = ChunkKey { layer, cx, cy };
+                    if c.ready(key) {
+                        continue;
+                    }
+                    if baked >= bake_cap {
+                        continue;
+                    }
+                    if bake_chunk(d, world, tiles, c, key) {
+                        baked += 1;
+                    }
+                }
+            }
+        }
+        // Blit ground+detail
+        for cy in cy0..=cy1 {
+            for cx in cx0..=cx1 {
+                let key = ChunkKey {
+                    layer: 0,
+                    cx,
+                    cy,
+                };
+                if c.ready(key) {
+                    let x = cx as f32 * CHUNK_TILES as f32 * TILE_PX;
+                    let y = cy as f32 * CHUNK_TILES as f32 * TILE_PX;
+                    d.chunk_blit(c, key, x, y);
+                } else {
+                    draw_chunk_direct(d, world, tiles, 0, cx, cy);
+                }
+            }
+        }
+        draw_animated(d, world, tiles, cam);
+        stats.chunks_ready = c.ready_count();
+        stats.bakes = c.bakes_this_frame;
+    } else {
+        stats.direct = true;
+        draw_visible_direct(d, world, tiles, cam, false);
+        draw_animated(d, world, tiles, cam);
+        stats.chunks_ready = 0;
+        stats.chunks_budget = 0;
+        stats.bakes = 0;
+    }
+}
 
-    for ty in y0..y1 {
-        for tx in x0..x1 {
-            let tile = map.ground[map.idx(tx, ty)];
-            let x = tx as f32 * TILE_PX;
-            let y = ty as f32 * TILE_PX;
-            let checker = ((tx + ty) % 2) == 0;
-            match tile {
-                WALL => {
-                    // pillar-sized interior blocks use pillar art when 2x2 cluster
-                    let is_pillar = is_interior_pillar(map, tx, ty);
-                    if is_pillar {
-                        if let Some(h) = pillar {
-                            d.sprite(h, 0, x, y, false);
-                        } else if let Some(h) = wall_face {
-                            d.sprite(h, 0, x, y, false);
-                        }
-                    } else if ty > 0 && map.ground[map.idx(tx, ty - 1)] != WALL {
-                        if let Some(h) = wall_top {
-                            d.sprite(h, 0, x, y, false);
-                        }
-                    } else if let Some(h) = wall_face {
-                        d.sprite(h, 0, x, y, false);
-                    }
+pub fn render_overhang(
+    d: &mut Draw,
+    world: &World,
+    tiles: &TileSprites,
+    cache: &Option<ChunkCache>,
+) {
+    let cam = world.camera.offset();
+    let (cx0, cy0, cx1, cy1) = visible_chunk_range(&world.map, cam);
+    if let Some(c) = cache.as_ref() {
+        for cy in cy0..=cy1 {
+            for cx in cx0..=cx1 {
+                let key = ChunkKey {
+                    layer: 1,
+                    cx,
+                    cy,
+                };
+                if c.ready(key) {
+                    let x = cx as f32 * CHUNK_TILES as f32 * TILE_PX;
+                    let y = cy as f32 * CHUNK_TILES as f32 * TILE_PX;
+                    d.chunk_blit(c, key, x, y);
+                } else {
+                    draw_chunk_direct(d, world, tiles, 1, cx, cy);
                 }
-                FOUNTAIN => {
-                    let frame = ((world.tick / 16) % 2) as u32;
-                    if let Some(h) = fountain {
-                        d.sprite(h, frame, x, y, false);
-                    }
-                }
-                _ => {
-                    let h = if checker { floor_a } else { floor_b };
-                    if let Some(h) = h {
-                        d.sprite(h, 0, x, y, false);
-                    }
-                }
+            }
+        }
+    } else {
+        draw_visible_direct(d, world, tiles, cam, true);
+    }
+}
+
+fn bake_chunk(
+    d: &mut Draw,
+    world: &World,
+    tiles: &TileSprites,
+    cache: &mut ChunkCache,
+    key: ChunkKey,
+) -> bool {
+    if !d.chunk_bake_begin(cache, key) {
+        return false;
+    }
+    let origin_x = key.cx * CHUNK_TILES;
+    let origin_y = key.cy * CHUNK_TILES;
+    for ty in 0..CHUNK_TILES {
+        for tx in 0..CHUNK_TILES {
+            let x = origin_x + tx;
+            let y = origin_y + ty;
+            if x >= world.map.width || y >= world.map.height {
+                continue;
+            }
+            let lx = tx as f32 * TILE_PX;
+            let ly = ty as f32 * TILE_PX;
+            let i = world.map.idx(x, y);
+            if key.layer == 0 {
+                blit_tile(d, tiles, world.map.ground[i], lx, ly, 0);
+                blit_tile(d, tiles, world.map.detail[i], lx, ly, 0);
+            } else {
+                blit_tile(d, tiles, world.map.overhang[i], lx, ly, 0);
+            }
+        }
+    }
+    d.chunk_bake_end(cache);
+    true
+}
+
+fn draw_chunk_direct(
+    d: &mut Draw,
+    world: &World,
+    tiles: &TileSprites,
+    layer: u8,
+    cx: u32,
+    cy: u32,
+) {
+    let origin_x = cx * CHUNK_TILES;
+    let origin_y = cy * CHUNK_TILES;
+    for ty in 0..CHUNK_TILES {
+        for tx in 0..CHUNK_TILES {
+            let x = origin_x + tx;
+            let y = origin_y + ty;
+            if x >= world.map.width || y >= world.map.height {
+                continue;
+            }
+            let px = x as f32 * TILE_PX;
+            let py = y as f32 * TILE_PX;
+            let i = world.map.idx(x, y);
+            if layer == 0 {
+                blit_tile(d, tiles, world.map.ground[i], px, py, 0);
+                blit_tile(d, tiles, world.map.detail[i], px, py, 0);
+            } else {
+                blit_tile(d, tiles, world.map.overhang[i], px, py, 0);
             }
         }
     }
 }
 
-fn is_interior_pillar(map: &content::maps::MapDef, tx: u32, ty: u32) -> bool {
-    // Arena pillars are 2×2 WALL blocks inset from border
-    if tx == 0 || ty == 0 || tx + 1 >= map.width || ty + 1 >= map.height {
-        return false;
+fn draw_visible_direct(
+    d: &mut Draw,
+    world: &World,
+    tiles: &TileSprites,
+    cam: crate::math::Vec2,
+    overhang_only: bool,
+) {
+    let x0 = ((cam.x / TILE_PX).floor() as i32).max(0) as u32;
+    let y0 = ((cam.y / TILE_PX).floor() as i32).max(0) as u32;
+    let x1 = ((cam.x + 480.0) / TILE_PX).ceil() as u32 + 1;
+    let y1 = ((cam.y + 270.0) / TILE_PX).ceil() as u32 + 1;
+    let x1 = x1.min(world.map.width);
+    let y1 = y1.min(world.map.height);
+    for ty in y0..y1 {
+        for tx in x0..x1 {
+            let i = world.map.idx(tx, ty);
+            let px = tx as f32 * TILE_PX;
+            let py = ty as f32 * TILE_PX;
+            if overhang_only {
+                blit_tile(d, tiles, world.map.overhang[i], px, py, 0);
+            } else {
+                blit_tile(d, tiles, world.map.ground[i], px, py, 0);
+                blit_tile(d, tiles, world.map.detail[i], px, py, 0);
+            }
+        }
     }
-    map.ground[map.idx(tx, ty)] == WALL
-        && map.collision[map.idx(tx, ty)]
-        && tx > 2
-        && ty > 2
-        && tx < map.width - 3
-        && ty < map.height - 3
+}
+
+fn draw_animated(d: &mut Draw, world: &World, tiles: &TileSprites, cam: crate::math::Vec2) {
+    let mut count = 0u32;
+    let coarsen = world.animated_tiles.len() > 180;
+    for (i, &(tx, ty, id)) in world.animated_tiles.iter().enumerate() {
+        if coarsen && i % 2 == 1 {
+            continue;
+        }
+        let px = tx as f32 * TILE_PX;
+        let py = ty as f32 * TILE_PX;
+        if px + TILE_PX < cam.x || py + TILE_PX < cam.y || px > cam.x + 480.0 || py > cam.y + 270.0
+        {
+            continue;
+        }
+        let info = catalog::tile_info(id);
+        let frame = if info.frames > 1 && info.anim_rate > 0 {
+            ((world.tick / u64::from(info.anim_rate)) % u64::from(info.frames)) as u32
+        } else {
+            0
+        };
+        blit_tile(d, tiles, id, px, py, frame);
+        count += 1;
+        if count > 200 {
+            break;
+        }
+    }
+}
+
+fn blit_tile(d: &mut Draw, tiles: &TileSprites, id: u16, x: f32, y: f32, frame: u32) {
+    if id == 0 {
+        return;
+    }
+    if let Some(h) = tiles.get(id) {
+        d.sprite(h, frame, x, y, false);
+    }
+}
+
+fn visible_chunk_range(map: &content::maps::MapDef, cam: crate::math::Vec2) -> (u32, u32, u32, u32) {
+    let tx0 = ((cam.x / TILE_PX).floor() as i32).max(0) as u32;
+    let ty0 = ((cam.y / TILE_PX).floor() as i32).max(0) as u32;
+    let tx1 = ((cam.x + 480.0) / TILE_PX).ceil() as u32 + 1;
+    let ty1 = ((cam.y + 270.0) / TILE_PX).ceil() as u32 + 1;
+    let tx1 = tx1.min(map.width.saturating_sub(1));
+    let ty1 = ty1.min(map.height.saturating_sub(1));
+    let cx0 = tx0 / CHUNK_TILES;
+    let cy0 = ty0 / CHUNK_TILES;
+    let cx1 = tx1 / CHUNK_TILES;
+    let cy1 = ty1 / CHUNK_TILES;
+    (cx0, cy0, cx1, cy1)
 }
 
 pub fn render_entity(d: &mut Draw, e: &Entity, sprites: &SpriteMap) {
@@ -99,7 +310,6 @@ pub fn render_entity(d: &mut Draw, e: &Entity, sprites: &SpriteMap) {
         }
         EntityKind::Slime => {
             if e.body.is_none() {
-                // telegraph shimmer
                 d.circle(e.pos.x + 8.0, e.pos.y + 8.0, 6.0, "rgba(120,220,140,0.35)");
                 return;
             }
@@ -195,9 +405,7 @@ fn render_player(d: &mut Draw, e: &Entity, sprites: &SpriteMap) {
     };
 
     let (key, frame, flip) = player_sprite(e.facing, pd, e);
-    if flash {
-        // white flash: draw slightly offset cream via charge glow underlay skip
-    }
+    let _ = flash;
     if matches!(pd.state, PlayerState::Charging { tick } if tick >= 20) {
         if let Some(h) = sprites.get("player_charge_glow") {
             d.sprite(h, 0, e.pos.x, e.pos.y - 8.0, flip);
@@ -208,7 +416,11 @@ fn render_player(d: &mut Draw, e: &Entity, sprites: &SpriteMap) {
     }
 }
 
-fn player_sprite(facing: Dir4, pd: &crate::world::entity::PlayerData, e: &Entity) -> (&'static str, u32, bool) {
+fn player_sprite(
+    facing: Dir4,
+    pd: &crate::world::entity::PlayerData,
+    e: &Entity,
+) -> (&'static str, u32, bool) {
     let flip = facing == Dir4::Left;
     let dir_slot = match facing {
         Dir4::Down => 0,
@@ -235,7 +447,7 @@ fn player_sprite(facing: Dir4, pd: &crate::world::entity::PlayerData, e: &Entity
                 (_, 1) => "player_lunge_u",
                 _ => "player_lunge_r",
             };
-            let f = if stage >= 2 { (f).min(1) } else { f };
+            let f = if stage >= 2 { f.min(1) } else { f };
             (key, f, flip)
         }
         PlayerState::Spin { tick } => ("player_spin", (tick as u32 / 2) % 8, false),
@@ -250,6 +462,14 @@ fn player_sprite(facing: Dir4, pd: &crate::world::entity::PlayerData, e: &Entity
         PlayerState::Charging { .. } => {
             let base = idle_frame(dir_slot, pd.walk_timer);
             ("player_idle", base, flip)
+        }
+        PlayerState::LedgeHop { .. } => {
+            let key = match dir_slot {
+                0 => "player_dash_d",
+                1 => "player_dash_u",
+                _ => "player_dash_r",
+            };
+            (key, 0, flip)
         }
         PlayerState::Idle => {
             if pd.shield_held {

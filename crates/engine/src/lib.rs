@@ -1,6 +1,7 @@
 pub mod atlas;
 pub mod audio;
 pub mod canvas;
+pub mod chunks;
 pub mod input;
 pub mod render;
 pub mod save;

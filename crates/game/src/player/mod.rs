@@ -116,6 +116,9 @@ fn update_movement(world: &mut World, pid: EntityId, input: &InputState) {
         let want = move_in.normalize_or_zero();
 
         match pd.state {
+            PlayerState::LedgeHop { .. } => {
+                p.vel = Vec2::ZERO;
+            }
             PlayerState::Dash { tick } => {
                 let t = tick + 1;
                 p.vel = pd.dash_dir.scale(tuning::DASH_SPEED);
@@ -185,7 +188,23 @@ fn update_movement(world: &mut World, pid: EntityId, input: &InputState) {
         }
     }
 
+    let prev_hop = matches!(
+        world.get(pid).map(|p| &p.data),
+        Some(EntityData::Player(pd)) if matches!(pd.state, PlayerState::LedgeHop { .. })
+    );
+
     integrate_entity(world, pid);
+
+    if !prev_hop {
+        if let Some(EntityData::Player(pd)) = world.get(pid).map(|p| &p.data) {
+            if matches!(pd.state, PlayerState::LedgeHop { tick: 0, .. }) {
+                if let Some(p) = world.get(pid) {
+                    world.push_event(WorldEvent::FxRequest(FxKind::Dust { pos: p.center() }));
+                }
+                world.push_event(WorldEvent::Sfx(SfxId::LedgeHop));
+            }
+        }
+    }
 }
 
 fn blend_move(pd: &mut crate::world::entity::PlayerData, vel: &mut Vec2, want: Vec2, top: f32) {

@@ -32,6 +32,8 @@ pub enum SfxId {
     SpawnShimmer,
     WaveCue,
     ReflectZing,
+    LedgeHop,
+    CheckpointChime,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -85,6 +87,8 @@ pub fn spec(id: SfxId) -> SfxSpec {
         SfxId::SpawnShimmer => sine(520.0, 780.0, 0.02, 0.14, 0.1),
         SfxId::WaveCue => square(330.0, 520.0, 0.02, 0.16, 0.14),
         SfxId::ReflectZing => sine(880.0, 1320.0, 0.005, 0.09, 0.14),
+        SfxId::LedgeHop => noise(180.0, 90.0, 0.005, 0.1, 0.12, 0.55),
+        SfxId::CheckpointChime => sine(660.0, 990.0, 0.02, 0.18, 0.1),
     }
 }
 

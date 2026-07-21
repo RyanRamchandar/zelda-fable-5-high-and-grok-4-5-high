@@ -21,7 +21,9 @@ pub const BUTTON_COUNT: usize = 6;
 pub const DEBUG_OVERLAY: usize = 0;
 pub const DEBUG_VIEWER: usize = 1;
 pub const DEBUG_ACTION: usize = 2;
-pub const DEBUG_COUNT: usize = 3;
+pub const DEBUG_MAP: usize = 3;
+pub const DEBUG_TELEPORT: usize = 4;
+pub const DEBUG_COUNT: usize = 5;
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Button {

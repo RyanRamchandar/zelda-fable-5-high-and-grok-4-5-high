@@ -43,6 +43,20 @@ pub fn bake() -> Result<BakedAssets, String> {
         viewer_keys.push(bake.key);
     }
 
+    let mut missing = Vec::new();
+    for &id in content::maps::catalog::all_tile_ids() {
+        let info = content::maps::catalog::tile_info(id);
+        if info.sprite.is_empty() {
+            continue;
+        }
+        if !by_key.contains_key(info.sprite) {
+            missing.push(info.sprite);
+        }
+    }
+    if !missing.is_empty() {
+        return Err(format!("tile sprites missing from atlas: {missing:?}"));
+    }
+
     Ok(BakedAssets {
         atlas: builder.finish(),
         sprites: SpriteMap { by_key, viewer_keys },

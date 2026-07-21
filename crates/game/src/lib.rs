@@ -1,4 +1,4 @@
-//! Game facade: fixed 60 Hz update + render. Phase 1B sprited arena.
+//! Game facade: fixed 60 Hz update + render. Phase 2A overworld foundation.
 
 mod assets;
 mod combat;
@@ -9,6 +9,7 @@ mod items;
 mod math;
 mod player;
 mod save_data;
+mod state;
 mod ui;
 mod world;
 
@@ -16,20 +17,23 @@ pub use assets::{bake as bake_assets, BakedAssets, SpriteMap};
 pub use content::audio::sfx::SfxId;
 pub use save_data::{SaveGame, SAVE_KEY};
 
-use content::maps::TILE_PX;
-use engine::input::{InputState, DEBUG_ACTION, DEBUG_OVERLAY};
+use content::maps::{self, MapId, TriggerKind, TILE_PX};
+use engine::chunks::ChunkCache;
+use engine::input::{InputState, DEBUG_ACTION, DEBUG_MAP, DEBUG_OVERLAY, DEBUG_TELEPORT};
 use engine::render::Draw;
 
 use crate::combat::style;
+use crate::draw_world::{MapRenderStats, TileSprites};
 use crate::enemies::WaveDirector;
 use crate::fx::{FxKind, FxState};
 use crate::math::{Dir4, Vec2};
+use crate::state::{fade_alpha, save_from_game, GameMode};
 use crate::ui::UiState;
 use crate::world::entity::{
     layer, AnimState, BeamData, Body, Entity, EntityData, EntityKind, PlayerState,
 };
 use crate::world::physics;
-use crate::world::{World, WorldEvent};
+use crate::world::{Spawner, World, WorldEvent};
 
 const SAVE_INTERVAL_TICKS: u32 = 60;
 
@@ -40,41 +44,89 @@ pub enum GameEvent {
 }
 
 pub struct Game {
-    world: World,
+    pub(crate) world: World,
+    pub(crate) spawner: Spawner,
+    pub(crate) current_map: MapId,
+    pub(crate) mode: GameMode,
+    pub(crate) gems: u8,
+    pub(crate) flags: Vec<u16>,
+    pub(crate) chunk_cache_reset: bool,
     fx: FxState,
     ui: UiState,
     sprites: SpriteMap,
+    tile_sprites: TileSprites,
+    chunk_cache: Option<ChunkCache>,
     waves: WaveDirector,
     ticks: u32,
     touch_active: bool,
     touch_overlay: engine::input::TouchOverlay,
+    map_stats: MapRenderStats,
+    teleport_idx: usize,
+    pub(crate) door_cooldown: u8,
+    pending_save: Option<String>,
 }
 
 impl Game {
     pub fn new(save: SaveGame, sprites: SpriteMap) -> Self {
-        let map = content::maps::arena();
-        let spawn = Vec2::new(save.x, save.y);
-        let mut world = World::new(map, spawn);
-
-        let dummies = [
-            Vec2::new(400.0, 240.0),
-            Vec2::new(520.0, 260.0),
-            Vec2::new(460.0, 320.0),
-        ];
-        for pos in dummies {
-            world.spawn(Entity::dummy(pos));
+        let tile_sprites = TileSprites::build(&sprites);
+        let map_id = save.map_id();
+        // Boot overworld at checkpoint entry (New Game = entry 0).
+        let map_id = if map_id == MapId::Arena {
+            MapId::Arena
+        } else {
+            MapId::Overworld
+        };
+        let entry = save.checkpoint;
+        let map = maps::build(map_id);
+        let (tx, ty) = map
+            .entry_pos(entry)
+            .or_else(|| map.entry_pos(0))
+            .unwrap_or((118, 206));
+        let spawn = Vec2::new(tx as f32 * TILE_PX, ty as f32 * TILE_PX);
+        let mut world = World::new(map_id, map, spawn);
+        world.checkpoint = save.checkpoint;
+        if let Some(p) = world.get_mut(world.player_id) {
+            if let EntityData::Player(pd) = &mut p.data {
+                pd.hearts = save.hearts;
+                pd.max_hearts = save.max_hearts;
+                pd.rupees = save.rupees;
+            }
+            if let Some(h) = p.health.as_mut() {
+                h.hp = save.hearts;
+                h.max = save.max_hearts;
+            }
         }
-        world.spawn(Entity::fountain(Vec2::new(72.0, 72.0)));
+        let spawner = Spawner::populate(&mut world);
+        debug_assert_door_entries(&world);
+
+        let chunk_cache = ChunkCache::new(48).ok();
 
         Self {
             world,
+            spawner,
+            current_map: map_id,
+            mode: GameMode::Play,
+            gems: save.gems,
+            flags: save.flags,
+            chunk_cache_reset: true,
             fx: FxState::new(),
             ui: UiState::new(),
             sprites,
+            tile_sprites,
+            chunk_cache,
             waves: WaveDirector::new(),
             ticks: 0,
             touch_active: false,
             touch_overlay: engine::input::TouchOverlay::default(),
+            map_stats: MapRenderStats {
+                chunks_ready: 0,
+                chunks_budget: 0,
+                bakes: 0,
+                direct: false,
+            },
+            teleport_idx: 0,
+            door_cooldown: 0,
+            pending_save: None,
         }
     }
 
@@ -99,9 +151,30 @@ impl Game {
             return Vec::new();
         }
 
+        // Debug map cycle / teleport (overlay required for teleport).
+        if self.ui.debug_overlay && input.debug[DEBUG_MAP].pressed {
+            let target = match self.current_map {
+                MapId::Overworld => MapId::Arena,
+                _ => MapId::Overworld,
+            };
+            state::begin_transition(self, target, 0);
+        }
+        if self.ui.debug_overlay && input.debug[DEBUG_TELEPORT].pressed {
+            self.cycle_teleport();
+        }
+
+        if matches!(self.mode, GameMode::Transition(_)) {
+            state::tick_transition(self);
+            self.ui.banner.update();
+            return self.drain_events(input);
+        }
+
         self.world.tick = self.world.tick.wrapping_add(1);
         tick_entity_timers(&mut self.world);
         combat::tick_dummies(&mut self.world);
+        if self.door_cooldown > 0 {
+            self.door_cooldown -= 1;
+        }
 
         if self.world.hitstop > 0 {
             self.world.hitstop -= 1;
@@ -114,12 +187,21 @@ impl Game {
         }
 
         player::update(&mut self.world, input);
-        enemies::update(&mut self.world, input, &mut self.waves);
+        self.spawner.update(&mut self.world);
+        if self.current_map == MapId::Arena {
+            enemies::update(&mut self.world, input, &mut self.waves);
+        } else {
+            enemies::update_no_waves(&mut self.world, input);
+        }
         integrate_non_player(&mut self.world);
         combat::resolve_hits(&mut self.world);
         items::update(&mut self.world);
         fx::update(&mut self.world, &mut self.fx);
-        check_player_death(&mut self.world);
+        self.ui.banner.update();
+        if let Some(json) = state::check_triggers(self) {
+            self.pending_save = Some(json);
+        }
+        state::check_player_death(self);
 
         let (target, facing) = self
             .world
@@ -136,6 +218,26 @@ impl Game {
         }
 
         self.drain_events(input)
+    }
+
+    fn cycle_teleport(&mut self) {
+        let entries = self.world.map.entries.clone();
+        if entries.is_empty() {
+            return;
+        }
+        self.teleport_idx = (self.teleport_idx + 1) % entries.len();
+        let e = entries[self.teleport_idx];
+        let pid = self.world.player_id;
+        if let Some(p) = self.world.get_mut(pid) {
+            p.pos = Vec2::new(e.tx as f32 * TILE_PX, e.ty as f32 * TILE_PX);
+            p.vel = Vec2::ZERO;
+        }
+        self.world.camera.snap_to(Vec2::new(
+            e.tx as f32 * TILE_PX + 8.0,
+            e.ty as f32 * TILE_PX + 8.0,
+        ));
+        self.door_cooldown = 30;
+        self.chunk_cache_reset = true;
     }
 
     fn drain_events(&mut self, _input: &InputState) -> Vec<GameEvent> {
@@ -187,20 +289,26 @@ impl Game {
                     items::pickups::spawn_drops(&mut self.world, pos);
                 }
                 WorldEvent::AttackHit { .. } | WorldEvent::DamagedPlayer { .. } => {}
+                WorldEvent::RegionEntered(region) => {
+                    if let Some(r) = self.world.map.regions.get(region as usize) {
+                        self.ui
+                            .banner
+                            .on_region(region, r.name, self.world.tick);
+                    }
+                }
             }
+        }
+
+        if let Some(json) = self.pending_save.take() {
+            outbound.push(GameEvent::Save(json));
         }
 
         self.ticks = self.ticks.wrapping_add(1);
         self.ui.fps_accum = self.ui.fps_accum.wrapping_add(1);
         if self.ticks.is_multiple_of(SAVE_INTERVAL_TICKS) {
-            if let Some(p) = self.world.get(self.world.player_id) {
-                let save = SaveGame {
-                    x: p.pos.x,
-                    y: p.pos.y,
-                };
-                if let Some(json) = save.to_json() {
-                    outbound.push(GameEvent::Save(json));
-                }
+            let save = save_from_game(self);
+            if let Some(json) = save.to_json() {
+                outbound.push(GameEvent::Save(json));
             }
             self.ui.fps_est = self.ui.renders as f32;
             self.ui.renders = 0;
@@ -222,7 +330,16 @@ impl Game {
         let cam = self.world.camera.offset();
         d.set_offset(-cam.x, -cam.y);
 
-        draw_world::render_map(d, &self.world, &self.sprites);
+        let prebake = self.chunk_cache_reset;
+        self.chunk_cache_reset = false;
+        draw_world::render_map(
+            d,
+            &mut self.world,
+            &self.tile_sprites,
+            &mut self.chunk_cache,
+            prebake,
+            &mut self.map_stats,
+        );
 
         let mut ids = self.world.alive_ids();
         ids.sort_by(|a, b| {
@@ -236,14 +353,32 @@ impl Game {
             }
         }
 
+        draw_world::render_overhang(d, &self.world, &self.tile_sprites, &self.chunk_cache);
+
         self.fx.render_world(d);
 
         d.set_offset(0.0, 0.0);
         ui::render_hud(d, &self.world, &self.sprites);
         self.fx.render_screen(d, &self.sprites);
+        self.ui.banner.render(d);
+
+        let alpha = fade_alpha(&self.mode);
+        if alpha > 0.01 {
+            let a = (alpha * 255.0) as u8;
+            d.rect(0.0, 0.0, 480.0, 270.0, &format!("rgba(0,0,0,{:.3})", alpha));
+            let _ = a;
+        }
 
         let state_str = player_state_label(&self.world);
-        ui::render_debug(d, &self.world, &self.ui, &self.fx, &state_str);
+        ui::render_debug(
+            d,
+            &self.world,
+            &self.ui,
+            &self.fx,
+            &state_str,
+            &self.map_stats,
+            self.current_map,
+        );
 
         if self.touch_active {
             let o = &self.touch_overlay;
@@ -308,7 +443,6 @@ fn integrate_non_player(world: &mut World) {
         };
         match entity.kind {
             EntityKind::Dummy => physics::move_entity(world, &mut entity),
-            // AI / rock update already called move_entity / fly (incl. kb decay).
             EntityKind::Slime
             | EntityKind::Octorok
             | EntityKind::Bat
@@ -323,37 +457,6 @@ fn integrate_non_player(world: &mut World) {
         }
         world.arena[slot].entity = Some(entity);
     }
-}
-
-fn check_player_death(world: &mut World) {
-    let dead = world
-        .get(world.player_id)
-        .and_then(|p| p.health)
-        .map(|h| h.hp <= 0)
-        .unwrap_or(false);
-    if !dead {
-        return;
-    }
-    let pid = world.player_id;
-    if let Some(p) = world.get_mut(pid) {
-        p.pos = Vec2::new(72.0, 88.0);
-        p.vel = Vec2::ZERO;
-        p.knockback = Vec2::ZERO;
-        if let Some(h) = p.health.as_mut() {
-            h.hp = 6;
-            h.max = 6;
-            h.iframes = 90;
-            h.flash = 0;
-        }
-        if let EntityData::Player(pd) = &mut p.data {
-            pd.hearts = 6;
-            pd.energy = 100.0;
-            pd.state = PlayerState::Idle;
-        }
-    }
-    world.push_event(WorldEvent::FxRequest(FxKind::Toast {
-        text: "FAIRY RESCUE",
-    }));
 }
 
 fn spawn_debug_shot(world: &mut World) {
@@ -403,7 +506,32 @@ fn player_state_label(world: &World) -> String {
             PlayerState::Spin { tick } => format!("spin:{tick}"),
             PlayerState::Dash { tick } => format!("dash:{tick}"),
             PlayerState::DashRecovery { tick } => format!("drec:{tick}"),
+            PlayerState::LedgeHop { tick, .. } => format!("ledge:{tick}"),
         },
         _ => "?".into(),
+    }
+}
+
+fn debug_assert_door_entries(world: &World) {
+    for tr in &world.map.triggers {
+        if let TriggerKind::Door { target, entry } = tr.kind {
+            let dest = maps::build(target);
+            if let Some((tx, ty)) = dest.entry_pos(entry) {
+                // Entry should not sit inside a return door rect of dest.
+                for dtr in &dest.triggers {
+                    if let TriggerKind::Door { .. } = dtr.kind {
+                        let inside = tx >= dtr.tx
+                            && ty >= dtr.ty
+                            && tx < dtr.tx + dtr.w
+                            && ty < dtr.ty + dtr.h;
+                        debug_assert!(
+                            !inside,
+                            "door re-entry: {:?} entry {} inside return door",
+                            target, entry
+                        );
+                    }
+                }
+            }
+        }
     }
 }

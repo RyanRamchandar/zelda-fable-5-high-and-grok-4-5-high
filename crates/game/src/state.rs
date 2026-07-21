@@ -1,0 +1,268 @@
+//! Game mode + map transitions + trigger handling.
+
+use content::audio::sfx::SfxId;
+use content::maps::{self, MapId, TriggerKind, TILE_PX};
+
+use crate::fx::FxKind;
+use crate::math::Vec2;
+use crate::save_data::SaveGame;
+use crate::world::entity::{EntityData, PlayerData, PlayerState};
+use crate::world::{Spawner, World, WorldEvent};
+use crate::Game;
+
+pub enum GameMode {
+    Play,
+    Transition(Transition),
+}
+
+pub struct Transition {
+    #[allow(dead_code)]
+    pub kind: Fade,
+    pub t: u8,
+    pub target: MapId,
+    pub entry: u8,
+}
+
+pub enum Fade {
+    Fade,
+}
+
+pub const FADE_TICKS: u8 = 16;
+
+#[derive(Clone, Debug)]
+pub struct PlayerPersist {
+    pub hearts: i32,
+    pub max_hearts: i32,
+    pub energy: f32,
+    pub rupees: u32,
+    pub style_points: f32,
+    pub style_rank: u8,
+    pub gems: u8,
+    pub flags: Vec<u16>,
+    pub checkpoint: u8,
+}
+
+impl PlayerPersist {
+    pub fn from_player(pd: &PlayerData, checkpoint: u8, gems: u8, flags: Vec<u16>) -> Self {
+        Self {
+            hearts: pd.hearts,
+            max_hearts: pd.max_hearts,
+            energy: pd.energy,
+            rupees: pd.rupees,
+            style_points: pd.style_points,
+            style_rank: pd.style_rank,
+            gems,
+            flags,
+            checkpoint,
+        }
+    }
+
+    pub fn apply(&self, pd: &mut PlayerData) {
+        pd.hearts = self.hearts;
+        pd.max_hearts = self.max_hearts;
+        pd.energy = self.energy;
+        pd.rupees = self.rupees;
+        pd.style_points = self.style_points;
+        pd.style_rank = self.style_rank;
+    }
+}
+
+pub fn switch_map(game: &mut Game, target: MapId, entry: u8) {
+    let persist = extract_persist(game);
+    let map = maps::build(target);
+    let (tx, ty) = map.entry_pos(entry).unwrap_or_else(|| {
+        map.entries
+            .first()
+            .map(|e| (e.tx, e.ty))
+            .unwrap_or((2, 2))
+    });
+    let spawn = Vec2::new(tx as f32 * TILE_PX, ty as f32 * TILE_PX);
+    let mut world = World::new(target, map, spawn);
+    world.checkpoint = persist.checkpoint;
+    apply_persist(&mut world, &persist);
+    let spawner = Spawner::populate(&mut world);
+    world.camera.snap_to(spawn.add(Vec2::new(8.0, 8.0)));
+    game.world = world;
+    game.spawner = spawner;
+    game.current_map = target;
+    game.gems = persist.gems;
+    game.flags = persist.flags;
+    game.chunk_cache_reset = true;
+}
+
+fn extract_persist(game: &Game) -> PlayerPersist {
+    let checkpoint = game.world.checkpoint;
+    let gems = game.gems;
+    let flags = game.flags.clone();
+    if let Some(p) = game.world.get(game.world.player_id) {
+        if let EntityData::Player(pd) = &p.data {
+            return PlayerPersist::from_player(pd, checkpoint, gems, flags);
+        }
+    }
+    PlayerPersist {
+        hearts: 6,
+        max_hearts: 6,
+        energy: 100.0,
+        rupees: 0,
+        style_points: 0.0,
+        style_rank: 0,
+        gems,
+        flags,
+        checkpoint,
+    }
+}
+
+fn apply_persist(world: &mut World, persist: &PlayerPersist) {
+    let pid = world.player_id;
+    if let Some(p) = world.get_mut(pid) {
+        if let EntityData::Player(pd) = &mut p.data {
+            persist.apply(pd);
+        }
+        if let Some(h) = p.health.as_mut() {
+            h.hp = persist.hearts;
+            h.max = persist.max_hearts;
+        }
+    }
+}
+
+pub fn begin_transition(game: &mut Game, target: MapId, entry: u8) {
+    game.mode = GameMode::Transition(Transition {
+        kind: Fade::Fade,
+        t: 0,
+        target,
+        entry,
+    });
+}
+
+pub fn tick_transition(game: &mut Game) {
+    let GameMode::Transition(tr) = &mut game.mode else {
+        return;
+    };
+    tr.t = tr.t.saturating_add(1);
+    let t = tr.t;
+    let target = tr.target;
+    let entry = tr.entry;
+    if t == FADE_TICKS {
+        switch_map(game, target, entry);
+        // Re-borrow after switch.
+        if let GameMode::Transition(tr) = &mut game.mode {
+            tr.t = FADE_TICKS;
+        }
+    }
+    if t >= FADE_TICKS * 2 {
+        game.mode = GameMode::Play;
+    }
+}
+
+pub fn fade_alpha(mode: &GameMode) -> f32 {
+    let GameMode::Transition(tr) = mode else {
+        return 0.0;
+    };
+    let t = tr.t as f32;
+    let half = FADE_TICKS as f32;
+    if t <= half {
+        t / half
+    } else {
+        1.0 - (t - half) / half
+    }
+}
+
+pub fn save_from_game(game: &Game) -> SaveGame {
+    let (hearts, max_hearts, rupees) = game
+        .world
+        .get(game.world.player_id)
+        .and_then(|p| match &p.data {
+            EntityData::Player(pd) => Some((pd.hearts, pd.max_hearts, pd.rupees)),
+            _ => None,
+        })
+        .unwrap_or((6, 6, 0));
+    SaveGame {
+        version: crate::save_data::SAVE_VERSION,
+        map: game.current_map.to_u8(),
+        entry: game.world.checkpoint,
+        checkpoint: game.world.checkpoint,
+        hearts,
+        max_hearts,
+        rupees,
+        gems: game.gems,
+        flags: game.flags.clone(),
+    }
+}
+
+pub fn check_triggers(game: &mut Game) -> Option<String> {
+    let feet = {
+        let p = game.world.get(game.world.player_id)?;
+        let c = p.center();
+        (
+            (c.x / TILE_PX).floor() as i32,
+            ((c.y + 6.0) / TILE_PX).floor() as i32,
+        )
+    };
+    let triggers = game.world.map.triggers.clone();
+    let mut immediate_save = None;
+    for tr in triggers {
+        let inside = feet.0 >= tr.tx as i32
+            && feet.1 >= tr.ty as i32
+            && feet.0 < (tr.tx + tr.w) as i32
+            && feet.1 < (tr.ty + tr.h) as i32;
+        if !inside {
+            continue;
+        }
+        match tr.kind {
+            TriggerKind::Door { target, entry } => {
+                if game.door_cooldown == 0 {
+                    game.door_cooldown = 40;
+                    begin_transition(game, target, entry);
+                    return None;
+                }
+            }
+            TriggerKind::Banner { region } => {
+                game.world
+                    .push_event(WorldEvent::RegionEntered(region));
+            }
+            TriggerKind::Checkpoint { id } => {
+                if game.world.checkpoint != id {
+                    game.world.checkpoint = id;
+                    game.world.push_event(WorldEvent::FxRequest(FxKind::Toast {
+                        text: "CHECKPOINT",
+                    }));
+                    game.world
+                        .push_event(WorldEvent::Sfx(SfxId::CheckpointChime));
+                    immediate_save = save_from_game(game).to_json();
+                }
+            }
+        }
+    }
+    immediate_save
+}
+
+pub fn check_player_death(game: &mut Game) {
+    let dead = game
+        .world
+        .get(game.world.player_id)
+        .and_then(|p| p.health)
+        .map(|h| h.hp <= 0)
+        .unwrap_or(false);
+    if !dead {
+        return;
+    }
+    let cp = game.world.checkpoint;
+    let map = game.current_map;
+    if let Some(p) = game.world.get_mut(game.world.player_id) {
+        if let Some(h) = p.health.as_mut() {
+            h.hp = 6;
+            h.max = h.max.max(6);
+            h.iframes = 90;
+            h.flash = 0;
+        }
+        if let EntityData::Player(pd) = &mut p.data {
+            pd.hearts = 6;
+            pd.energy = 100.0;
+            pd.state = PlayerState::Idle;
+        }
+    }
+    switch_map(game, map, cp);
+    game.world.push_event(WorldEvent::FxRequest(FxKind::Toast {
+        text: "FAIRY RESCUE",
+    }));
+}

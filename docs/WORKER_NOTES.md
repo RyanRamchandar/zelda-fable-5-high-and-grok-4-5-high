@@ -166,3 +166,72 @@ All 1A frozen seams honored. Additive only: `EntityKind::{Slime,Bat,Octorok,Octo
   placed-enemy count (~60–80 defs) never means 60 live AIs.
 - Sequential only: 2B edits region modules and game files 2A owns; there is
   no zero-contention parallel split. Do not run 2A and 2B concurrently.
+
+## Phase 2A completion — 2026-07-21 (Grok 4.5 High Fast worker)
+
+### What landed
+- **M1 MapDef v2**: layered `ground`/`detail`/`overhang`, `collision: Vec<u8>`
+  flags (SOLID/WATER/LEDGE_*), spawns/triggers/regions/entries,
+  `content::maps::build(MapId)`, `catalog::tile_info` + id ranges, `paint.rs`
+  helpers (path/blob/scatter/stamp/river), arena ported under `MapId::Arena`.
+- **M2 terrain art + render + collision**: `tiles_terrain` / `tiles_water` /
+  `tiles_forest` (+ palette W–Z dirt/ash/sand/wood), data-driven
+  `draw_world` via `TileSprites`, `PlayerState::LedgeHop`, water/ledges in
+  physics, `SfxId::{LedgeHop,CheckpointChime}`.
+- **M3 chunk cache**: `engine::chunks::ChunkCache` (48 LRU, 16×16 tiles),
+  `Draw::chunk_bake_*` / `chunk_blit`, 2 bakes/frame amortization + map-load
+  prebake, animated-tile overdraw, direct-draw fallback, `World::set_tile` +
+  dirty chunks. F1 shows `chunks: ready/budget bakeN`.
+- **M4 overworld 240×240**: six region shells (village/grove/camp/ruins/
+  cliffs/shrine) + connective river/roads/bridges/meadow; outer 2-tile
+  solid border; checkpoints + banners + placeholder spawns.
+- **M5 runtime**: `GameMode`/`Transition` fades, `switch_map` +
+  `PlayerPersist`, interior stubs (houses/shop/caves), `spawner` distance
+  lifecycle, WaveDirector scoped to Arena, F3 map cycle / F4 entry teleport,
+  SaveGame v2 (checkpoint-based; v1 JSON → New Game).
+- **M6 camera**: soft 24×16 dead-zone, lookahead ease 0.08 toward 16 px,
+  follow 0.15 retained; region banners via `WorldEvent::RegionEntered`.
+
+### Frozen 2B seam table (PHASE2A §5)
+| # | Seam | Status |
+|---|---|---|
+| 1 | `MapDef` v2 + painters + `catalog::tile_info` + id ranges | **frozen** |
+| 2 | `SpawnKind` / `TriggerKind` / `RegionDef` / `EntryPoint` (2B appends) | **frozen** |
+| 3 | `content::maps::build(MapId)` + `MapId`↔u8 | **frozen** |
+| 4 | `game::state::switch_map` + `PlayerPersist` + Transition fade | **frozen** |
+| 5 | `spawner::SpawnSlot` Dormant/Alive/Dead + respawn rule | **frozen** |
+| 6 | `World::set_tile` + dirty-chunk invalidation | **frozen** |
+| 7 | `SaveGame` v2 (`gems`/`flags` for 2B writers) | **frozen** |
+| 8 | Chunk cache API + animated-tile overdraw list | **frozen** |
+| 9 | `WorldEvent::RegionEntered` + `ui::banner` | **frozen** |
+| 10 | Debug F3 (map cycle) / F4 (teleport entries) | **frozen** |
+
+### Deviations / tuning
+- Camera dead-zone / lookahead at brief defaults (24×16, look 16 @ 0.08) —
+  no ±30% needed after smoke.
+- Palette: 4 new entries W–Z (dirt light, ash, sand, wood); logged.
+- Arena FLOOR/WALL/FOUNTAIN relocated to catalog ids 200–204 (0 = void).
+- Overworld boots at entry 0 (village south gate); arena via F3 with overlay.
+- Structure shells live in `tiles_forest.rs` with canopy (kept files <600).
+
+### Verification
+- `cargo check` + `clippy -D warnings` (wasm32) clean
+- `env -u NO_COLOR trunk build --release` → `dist/` ok
+- Playwright vs `python3 -m http.server 8090 --directory dist`:
+  - Boot overworld; grass/path/trees + bat spawn; HUD hearts
+  - F1: `fps~60`, `map OW`, `chunks: 18/48 bake0`
+  - Save v2 JSON in `shard_save_v1` (`version:2`, map/entry/checkpoint)
+  - F3 → Arena WAVE 1 + dummies/pillars (`map Arena`, chunks live)
+  - Processes cleaned: http.server:8090 + headless_shell killed after smoke
+
+### Perf notes / risks
+- Mid-laptop smoke ~60 fps with chunk blit path; bake amortized (bake0 after
+  warm). iPhone Gate C still unverified on device.
+- Overworld shell density is terrain-only — 2B will add props; watch animated
+  water count (coarsen if >180 visible).
+- Door re-entry guarded by authored entry points + `door_cooldown`; debug
+  assert scans door landings at map load.
+
+### Gate readiness for 2B
+**YES** — seams frozen above. Residual: human full-map ledge/bridge feel
+pass, gamepad still untested, art is readable shell quality not final polish.

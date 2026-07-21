@@ -1,11 +1,20 @@
-//! Smooth-follow camera with soft lookahead and capped screenshake.
+//! Smooth-follow camera with soft dead-zone, eased lookahead, capped screenshake.
 
 use crate::math::{Dir4, Vec2};
+
+/// Soft dead-zone half extents (px). Tuned ±30% from brief 24×16.
+const DEAD_X: f32 = 24.0;
+const DEAD_Y: f32 = 16.0;
+const LOOKAHEAD: f32 = 16.0;
+const LOOK_EASE: f32 = 0.08;
+const FOLLOW: f32 = 0.15;
+
 pub struct Camera {
     pub pos: Vec2,
     pub shake: Vec2,
     pub shake_ticks: u8,
     pub shake_mag: f32,
+    look: Vec2,
 }
 
 impl Camera {
@@ -15,6 +24,7 @@ impl Camera {
             shake: Vec2::ZERO,
             shake_ticks: 0,
             shake_mag: 0.0,
+            look: Vec2::ZERO,
         }
     }
 
@@ -34,10 +44,23 @@ impl Camera {
         target: Vec2,
         facing: Dir4,
     ) {
-        let look = facing.unit().scale(12.0);
-        let desired = target.add(look);
-        self.pos.x += (desired.x - self.pos.x) * 0.15;
-        self.pos.y += (desired.y - self.pos.y) * 0.15;
+        let want_look = facing.unit().scale(LOOKAHEAD);
+        self.look.x += (want_look.x - self.look.x) * LOOK_EASE;
+        self.look.y += (want_look.y - self.look.y) * LOOK_EASE;
+
+        // Dead-zone: only chase when target leaves box around camera center.
+        let mut desired = self.pos;
+        let dx = target.x + self.look.x - self.pos.x;
+        let dy = target.y + self.look.y - self.pos.y;
+        if dx.abs() > DEAD_X {
+            desired.x = target.x + self.look.x - dx.signum() * DEAD_X;
+        }
+        if dy.abs() > DEAD_Y {
+            desired.y = target.y + self.look.y - dy.signum() * DEAD_Y;
+        }
+
+        self.pos.x += (desired.x - self.pos.x) * FOLLOW;
+        self.pos.y += (desired.y - self.pos.y) * FOLLOW;
 
         let half_w = 240.0;
         let half_h = 135.0;
@@ -68,5 +91,6 @@ impl Camera {
 
     pub fn snap_to(&mut self, target: Vec2) {
         self.pos = target;
+        self.look = Vec2::ZERO;
     }
 }

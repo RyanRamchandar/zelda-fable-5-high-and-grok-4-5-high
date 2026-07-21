@@ -3,17 +3,21 @@
 pub mod camera;
 pub mod entity;
 pub mod physics;
+pub mod spawner;
 
-use content::maps::MapDef;
+use content::maps::{catalog, MapDef, MapId, TileLayer};
+use engine::chunks::ChunkKey;
 use fastrand::Rng;
 
 use crate::combat::style::StyleVerb;
 use crate::fx::FxKind;
 use crate::math::Vec2;
 use content::audio::sfx::SfxId;
+use content::maps::TILE_PX;
 
 pub use camera::Camera;
 pub use entity::{Entity, EntityId, EntityKind};
+pub use spawner::Spawner;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum AttackKind {
@@ -51,6 +55,7 @@ pub enum WorldEvent {
     Sfx(SfxId),
     StyleAction(StyleVerb),
     EnergyDenied,
+    RegionEntered(u8),
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -76,6 +81,8 @@ pub struct World {
     pub arena: Vec<Slot>,
     pub free: Vec<u32>,
     pub map: MapDef,
+    #[allow(dead_code)] // seam: map identity for 2B systems
+    pub map_id: MapId,
     pub camera: Camera,
     pub hitstop: u8,
     pub events: Vec<WorldEvent>,
@@ -84,14 +91,19 @@ pub struct World {
     pub player_id: EntityId,
     pub active_attacks: Vec<ActiveAttack>,
     pub hit_pairs: Vec<(u32, u32)>,
+    pub dirty_chunks: Vec<ChunkKey>,
+    pub animated_tiles: Vec<(u32, u32, u16)>,
+    pub checkpoint: u8,
 }
 
 impl World {
-    pub fn new(map: MapDef, player_pos: Vec2) -> Self {
+    pub fn new(map_id: MapId, map: MapDef, player_pos: Vec2) -> Self {
+        let animated_tiles = collect_animated(&map);
         let mut world = Self {
             arena: Vec::new(),
             free: Vec::new(),
             map,
+            map_id,
             camera: Camera::new(player_pos.add(Vec2::new(8.0, 8.0))),
             hitstop: 0,
             events: Vec::new(),
@@ -100,11 +112,45 @@ impl World {
             player_id: EntityId { index: 0, gen: 0 },
             active_attacks: Vec::new(),
             hit_pairs: Vec::new(),
+            dirty_chunks: Vec::new(),
+            animated_tiles,
+            checkpoint: 0,
         };
         let pid = world.spawn(Entity::player(player_pos));
         world.player_id = pid;
         world.camera.snap_to(player_pos.add(Vec2::new(8.0, 8.0)));
         world
+    }
+
+    /// Mutate a tile and mark the owning chunk dirty (2B secrets / Phase 3 bombs).
+    #[allow(dead_code)]
+    pub fn set_tile(&mut self, layer: TileLayer, tx: u32, ty: u32, id: u16) {
+        self.map.set(tx, ty, layer, id);
+        let cx = tx / 16;
+        let cy = ty / 16;
+        let key = ChunkKey {
+            layer: if matches!(layer, TileLayer::Overhang) {
+                1
+            } else {
+                0
+            },
+            cx,
+            cy,
+        };
+        if !self.dirty_chunks.contains(&key) {
+            self.dirty_chunks.push(key);
+        }
+        // Ground change also dirties the composite layer-0 chunk.
+        if matches!(layer, TileLayer::Detail) {
+            let g = ChunkKey { layer: 0, cx, cy };
+            if !self.dirty_chunks.contains(&g) {
+                self.dirty_chunks.push(g);
+            }
+        }
+        self.animated_tiles.retain(|&(x, y, _)| !(x == tx && y == ty));
+        if catalog::tile_info(id).frames > 1 {
+            self.animated_tiles.push((tx, ty, id));
+        }
     }
 
     pub fn spawn(&mut self, entity: Entity) -> EntityId {
@@ -193,4 +239,20 @@ impl World {
     pub fn clear_swing_hits(&mut self, swing_id: u32) {
         self.hit_pairs.retain(|&(s, _)| s != swing_id);
     }
+}
+
+fn collect_animated(map: &MapDef) -> Vec<(u32, u32, u16)> {
+    let mut out = Vec::new();
+    for ty in 0..map.height {
+        for tx in 0..map.width {
+            let i = map.idx(tx, ty);
+            for &id in &[map.ground[i], map.detail[i]] {
+                if catalog::tile_info(id).frames > 1 {
+                    out.push((tx, ty, id));
+                }
+            }
+        }
+    }
+    let _ = TILE_PX;
+    out
 }

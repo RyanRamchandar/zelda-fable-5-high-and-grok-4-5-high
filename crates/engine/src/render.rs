@@ -2,13 +2,16 @@ use wasm_bindgen::JsCast;
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement};
 
 use crate::atlas::{Atlas, SpriteHandle};
+use crate::chunks::{ChunkCache, ChunkKey, CHUNK_PX};
 
 pub struct Draw {
     ctx: CanvasRenderingContext2d,
+    main_ctx: CanvasRenderingContext2d,
     ox: f32,
     oy: f32,
     atlas: Option<Atlas>,
     smoothing_off: bool,
+    baking: bool,
 }
 
 impl Draw {
@@ -21,12 +24,53 @@ impl Draw {
             .map_err(|_| "not CanvasRenderingContext2d")?;
         ctx.set_image_smoothing_enabled(false);
         Ok(Self {
+            main_ctx: ctx.clone(),
             ctx,
             ox: 0.0,
             oy: 0.0,
             atlas: None,
             smoothing_off: true,
+            baking: false,
         })
+    }
+
+    /// Begin baking into a chunk canvas. Draw calls use chunk-local coords.
+    /// Returns false if the cache could not allocate a slot this frame.
+    pub fn chunk_bake_begin(&mut self, cache: &mut ChunkCache, key: ChunkKey) -> bool {
+        match cache.ensure_slot(key) {
+            Ok(true) => {}
+            _ => return false,
+        }
+        let Some(cctx) = cache.ctx_mut(key) else {
+            return false;
+        };
+        cctx.set_fill_style_str("rgba(0,0,0,0)");
+        cctx.clear_rect(0.0, 0.0, f64::from(CHUNK_PX), f64::from(CHUNK_PX));
+        self.ctx = cctx.clone();
+        self.ox = 0.0;
+        self.oy = 0.0;
+        self.baking = true;
+        true
+    }
+
+    pub fn chunk_bake_end(&mut self, _cache: &mut ChunkCache) {
+        self.ctx = self.main_ctx.clone();
+        self.baking = false;
+        self.ox = 0.0;
+        self.oy = 0.0;
+    }
+
+    pub fn chunk_blit(&self, cache: &ChunkCache, key: ChunkKey, dst_x: f32, dst_y: f32) {
+        let Some(canvas) = cache.canvas(key) else {
+            return;
+        };
+        let _ = self
+            .main_ctx
+            .draw_image_with_html_canvas_element(
+                canvas,
+                f64::from(dst_x + self.ox),
+                f64::from(dst_y + self.oy),
+            );
     }
 
     pub fn set_atlas(&mut self, atlas: Atlas) {

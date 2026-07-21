@@ -7,7 +7,7 @@ use web_sys::{KeyboardEvent, Window};
 
 use super::{
     SharedInput, BUTTON_ATTACK, BUTTON_CONFIRM, BUTTON_DASH, BUTTON_INTERACT, BUTTON_ITEM,
-    BUTTON_PAUSE, DEBUG_ACTION, DEBUG_OVERLAY, DEBUG_VIEWER,
+    BUTTON_PAUSE, DEBUG_ACTION, DEBUG_MAP, DEBUG_OVERLAY, DEBUG_TELEPORT, DEBUG_VIEWER,
 };
 
 pub fn attach(
@@ -100,6 +100,18 @@ fn apply_key(state: &mut SharedInput, code: &str, down: bool) -> bool {
             state.debug_held[DEBUG_ACTION] = down;
             if down {
                 state.debug_pulse[DEBUG_ACTION] = true;
+            }
+        }
+        "F3" => {
+            state.debug_held[DEBUG_MAP] = down;
+            if down {
+                state.debug_pulse[DEBUG_MAP] = true;
+            }
+        }
+        "F4" => {
+            state.debug_held[DEBUG_TELEPORT] = down;
+            if down {
+                state.debug_pulse[DEBUG_TELEPORT] = true;
             }
         }
         _ => handled = false,
