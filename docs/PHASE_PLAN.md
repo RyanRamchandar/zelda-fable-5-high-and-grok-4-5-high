@@ -202,8 +202,26 @@ run them concurrently.
 
 **Goal:** Title screen, chapter select (Act 1 + locked 2–3 cards), pause/help overlay
 (objective + all three binding sets), full save/checkpoint UX (continue, chapter
-restart, rupee carry), touch controls skinned + iPhone-verified (layout, thumb reach,
+restart, rupee carry), touch controls skinned + mobile-verified (layout, thumb reach,
 no browser gestures), gamepad fully mapped incl. menus, credits polish, R-to-skip.
+
+One brief (`WORKER_BRIEF_PHASE4.md`, written against real post-3B code), two
+**sequential** parts for one worker:
+
+- **4A — Meta shell** (M1–M5): `GameMode::Title`, `ui::{title,pause}` (new),
+  pause routing pulled out of `MinimapState::update`, chapter select with
+  rupee-carry restart, New Game erase-confirm, Continue (incl. mid-dungeon
+  checkpoint 7/8/9 boot), settings (`muted` in SaveGame v2 via serde default,
+  `GameEvent::SetMuted`, `Audio::set_muted`), credits R-to-skip (KeyR/pad
+  Back → `BUTTON_CONFIRM`), Help page = objective line + 3-column bindings +
+  live input echo.
+- **4B — Touch v2 + mobile + gamepad** (M6–M9, starts only after 4A commits):
+  touch backend rewrite to a data-driven button table (Attack/Item/Dash/
+  Interact/Cycle/Pause + floating joystick), `TouchOverlay` v2 + `menu_tap`,
+  skinned `ui::touch` (Item disc doubles as B-item readout — fixes the
+  450,240 HUD overlap), menu tap targets, `index.html` mobile CSS
+  (dvh/overscroll/callout) + portrait-rotate scrim, gamepad hardware
+  checklist + Help-page input echo as on-screen tester.
 
 **Acceptance criteria**
 1. Cold load → title → New Game/Continue/Chapter Select all function.
@@ -212,29 +230,51 @@ no browser gestures), gamepad fully mapped incl. menus, credits polish, R-to-ski
 3. Pause shows current objective + bindings for all three input methods.
 4. Reload mid-dungeon resumes at last checkpoint with correct flags/rupees.
 
-**Ownership:** `game::ui` + `game::state` = worker A; `engine::input::touch` polish +
-mobile CSS/viewport = worker B.
+**Ownership:** 4A = `game::{state,ui::{title,pause},save_data,events}` +
+`content::{text,art::ui_meta,audio::sfx appends}` + one-line keyboard/gamepad/
+audio engine touches. 4B = `engine::input::touch` (+ `InputState` additions),
+`game::ui::touch` (new), `index.html`. Sequential — 4B skins surfaces 4A
+creates; no gameplay-module edits anywhere in Phase 4.
 
 ---
 
 ## Phase 5 — Polish + Netlify (Gate C)
 
-**Goal:** Feel/readability pass across everything: music tracks per area (village,
-overworld, dungeon, boss, victory), ambient particles/lighting (lanterns, fountains,
-leaves), boss-intro cinematics polish, difficulty tuning, sprite QA pass in motion,
-perf pass (chunk cache, entity caps), validation sweep (prompt §13: reachability,
-exit reciprocity, minimap consistency, puzzle resets, full critical-path playthrough
-in a real browser incl. touch/gamepad, screenshots), README final, **deploy**.
+**Goal:** Ship it. One brief (`WORKER_BRIEF_PHASE5.md`), one worker, milestones
+strictly ordered so the deploy contains everything:
+
+- **M1 feel pass** — pay the WORKER_NOTES residual-risk debts (perfect-block
+  window/readability, camp wave 2/3 spike, Warden telegraphs + fake-flash
+  teach + cp9 retry, seal throw tolerance, tap-bomb vs hold-shield), tunic
+  cosmetic palette swap (3B deferral), ambient leaves/embers/fountain
+  particles (2B deferral, capped ≤24), F2 sprite QA sweep in motion.
+- **M2 music** — `engine::audio` chiptune sequencer (2 pulse + triangle +
+  noise, WebAudio lookahead scheduling from the rAF closure),
+  `content::audio::music` six tracks (Title/Village/Overworld/Dungeon/Boss/
+  Victory), `GameEvent::SetMusic` + `game::music_director`, SFX distinctness
+  sweep under music.
+- **M3 perf** — camp wave 3 / Currents / Warden P3 at ~60 (floor 55); levers:
+  particle caps, animated-tile coarsening, chunk budget, ≤12 active AI law.
+- **M4 validation sweep** — full New-Game→credits keyboard playthrough +
+  puzzle-reset audit + reciprocity assert + touch emulation spot-check +
+  save-matrix (old/absent/corrupt), screenshots archived.
+- **M5 README final** (+ `docs/media/` screenshots) → **M6 Netlify prod
+  deploy** to locked slug `zelda-fable-5-high-and-grok-4-5-high` (immutable
+  cache headers for hashed wasm/js; `netlify login` escalation protocol) →
+  **M7 GitHub push** (`gh auth` escalation; dashed repo name) → **M8 Gate C
+  completion entry**.
 
 **Acceptance criteria**
 1. Full Act 1 playthrough recorded clean in a real browser (keyboard, then touch spot-checks).
 2. Music + ambient audio in all areas; every prompt §12 cue present and distinct.
 3. `netlify deploy --prod --dir dist` live at slug
    `zelda-fable-5-high-and-grok-4-5-high`; live URL loads and plays on desktop +
-   iPhone Safari.
+   iPhone Safari (device pass documented as owed if no hardware).
 4. Git history clean; push to GitHub (escalate for credentials if needed).
 
-**Ownership:** polish split by area, not by module; deploy = single worker at the end.
+**Ownership:** single worker; feel-pass edits inside `game::{player,enemies,
+boss,puzzle,fx,combat::tuning}` are tuning/readability only — map geometry,
+room topology, id allocations, and Phase 4 menu flows are frozen.
 
 ---
 

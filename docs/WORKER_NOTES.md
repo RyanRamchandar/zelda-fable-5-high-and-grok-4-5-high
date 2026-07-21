@@ -587,3 +587,40 @@ readability, fake-flash teach, death mid-P2 → cp9). Screenshots: `/tmp/p3b_smo
 ### Ready for Fable Phase 4/5 briefs?
 **YES** — Gate B closed for Act 1 climax systems. Residual risks: human boss feel pass,
 gamepad/touch item parity still Phase 4, tunic palette cosmetic polish.
+
+## Phase 4/5 planning — 2026-07-21 (Planner, Fable 5)
+
+- Gate B accepted at `1004154`. Two briefs written against the real post-3B
+  code: `WORKER_BRIEF_PHASE4.md` (meta shell + inputs) then
+  `WORKER_BRIEF_PHASE5.md` (polish/music/perf/validation/deploy, Gate C).
+  Phase 5 is blocked on the Phase 4 completion entry here.
+- Phase 4 is ONE worker, two sequential parts (4A meta shell → 4B touch v2 +
+  mobile + gamepad) — not the old plan's parallel A/B split, because 4B
+  skins surfaces 4A creates (pause pages, title menus, HUD item slot) and
+  both edit `game::ui`. Key reality deltas the brief encodes: `GameMode` is
+  Play|Transition only (no Title); Esc currently toggles
+  `minimap.pause_open` *inside* `MinimapState::update` — 4A extracts pause
+  routing into a new `ui::pause` with Map/Help/Options pages; touch backend
+  has ONLY joystick+Attack+Dash, and the touch Attack circle (430,230 r18)
+  visually collides with the HUD item slot (450,240) — 4B's data-driven
+  button table + Item-disc-as-B-item-readout resolves it; shop's move_vec
+  hysteresis cursor is the locked menu-nav precedent so keyboard/gamepad/
+  touch menus share one code path.
+- Scoped engine changes allowed in Phase 4 are enumerated exhaustively in
+  its §2 (KeyR/pad-8 → CONFIRM, `Audio::set_muted`, touch backend v2 +
+  `InputState.menu_tap`/`viewport_portrait`); everything else in engine is
+  frozen. SaveGame stays v2 (`muted` via serde default) — Gate B saves must
+  Continue cleanly.
+- Chapter-select restart carries rupees only (DECISIONS §6); New Game wipes
+  behind an explicit confirm. Victory predicate for the Act 1 card is
+  `SHARD_OF_COURAGE` (3B seam).
+- Phase 5 is ONE worker, strictly ordered M1→M8 so the deploy ships every
+  fix: feel-debt pass built from the accumulated residual-risk lines (each
+  item gets a logged disposition), music sequencer (engine synth + content
+  patterns + `SetMusic` event, same platform/data split as SFX), perf pass
+  on the three hot spots, prompt-§13 validation sweep, README+media, then
+  Netlify prod deploy to the LOCKED slug and GitHub push. Credential
+  escalation protocol is explicit in the brief (§M6.3/M7.1): attempt
+  `netlify status`/`gh auth status`, trigger login, stop once with a clear
+  message, resume after the human authenticates.
+- PHASE_PLAN Phases 4–5 rewritten to match. No gameplay code in this commit.
