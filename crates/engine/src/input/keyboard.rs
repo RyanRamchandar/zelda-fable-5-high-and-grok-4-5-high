@@ -84,9 +84,24 @@ fn apply_key(state: &mut SharedInput, code: &str, down: bool) -> bool {
         "KeyE" => state.key_held[BUTTON_INTERACT] = down,
         "Escape" => state.key_held[BUTTON_PAUSE] = down,
         "Enter" => state.key_held[BUTTON_CONFIRM] = down,
-        "F1" => state.debug_held[DEBUG_OVERLAY] = down,
-        "F2" => state.debug_held[DEBUG_VIEWER] = down,
-        "KeyH" => state.debug_held[DEBUG_ACTION] = down,
+        "F1" => {
+            state.debug_held[DEBUG_OVERLAY] = down;
+            if down {
+                state.debug_pulse[DEBUG_OVERLAY] = true;
+            }
+        }
+        "F2" => {
+            state.debug_held[DEBUG_VIEWER] = down;
+            if down {
+                state.debug_pulse[DEBUG_VIEWER] = true;
+            }
+        }
+        "KeyH" => {
+            state.debug_held[DEBUG_ACTION] = down;
+            if down {
+                state.debug_pulse[DEBUG_ACTION] = true;
+            }
+        }
         _ => handled = false,
     }
     handled

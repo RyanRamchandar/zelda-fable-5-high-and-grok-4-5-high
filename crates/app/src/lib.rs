@@ -24,8 +24,24 @@ pub fn start() {
         }
     };
 
+    let baked = match game::bake_assets() {
+        Ok(b) => b,
+        Err(e) => {
+            error(&format!("atlas bake failed: {e}"));
+            return;
+        }
+    };
+
+    {
+        let mut p = platform.borrow_mut();
+        p.draw.set_atlas(baked.atlas);
+    }
+
     let saved = engine::save::load(SAVE_KEY);
-    let game = Rc::new(RefCell::new(Game::from_storage_json(saved)));
+    let game = Rc::new(RefCell::new(Game::from_storage_json(
+        saved,
+        baked.sprites,
+    )));
 
     let platform_loop = platform.clone();
     let game_loop = game;

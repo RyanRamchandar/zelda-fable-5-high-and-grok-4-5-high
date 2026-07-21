@@ -1,12 +1,12 @@
-//! Functional plain-rect HUD. Layout constants stay here for 1B skinning.
+//! Atlas-skinned HUD. Layout constants preserved from 1A.
 
 use engine::render::Draw;
 
+use crate::assets::SpriteMap;
 use crate::combat::style;
 use crate::world::entity::EntityData;
 use crate::world::World;
 
-// Layout (screen space) — 1B replaces drawing, keeps positions.
 pub const HEART_X: f32 = 8.0;
 pub const HEART_Y: f32 = 8.0;
 pub const HEART_W: f32 = 10.0;
@@ -25,7 +25,7 @@ pub const ITEM_X: f32 = 450.0;
 pub const ITEM_Y: f32 = 240.0;
 pub const ITEM_S: f32 = 20.0;
 
-pub fn draw(d: &mut Draw, world: &World) {
+pub fn draw(d: &mut Draw, world: &World, sprites: &SpriteMap) {
     let Some(p) = world.get(world.player_id) else {
         return;
     };
@@ -36,47 +36,77 @@ pub fn draw(d: &mut Draw, world: &World) {
     let max = p.health.map(|h| h.max).unwrap_or(pd.max_hearts);
     let hearts = max / 2;
 
+    let full = sprites.get("heart_full");
+    let half = sprites.get("heart_half");
+    let empty = sprites.get("heart_empty");
+
     for i in 0..hearts {
         let x = HEART_X + i as f32 * HEART_GAP;
         let units = hp - i * 2;
-        let color = if units >= 2 {
-            "#e04040"
+        let h = if units >= 2 {
+            full
         } else if units == 1 {
-            "#a03030"
+            half
         } else {
-            "#402020"
+            empty
         };
-        d.rect(x, HEART_Y, HEART_W, HEART_H, color);
-        if units == 1 {
-            d.rect(x + HEART_W * 0.5, HEART_Y, HEART_W * 0.5, HEART_H, "#402020");
+        if let Some(h) = h {
+            d.sprite(h, 0, x, HEART_Y, false);
+        } else {
+            d.rect(x, HEART_Y, HEART_W, HEART_H, "#e04040");
         }
     }
 
-    // Energy bar
-    d.rect(ENERGY_X - 1.0, ENERGY_Y - 1.0, ENERGY_W + 2.0, ENERGY_H + 2.0, "#202020");
+    if let Some(frame) = sprites.get("energy_frame") {
+        d.sprite(frame, 0, ENERGY_X - 1.0, ENERGY_Y - 2.0, false);
+    } else {
+        d.rect(
+            ENERGY_X - 1.0,
+            ENERGY_Y - 1.0,
+            ENERGY_W + 2.0,
+            ENERGY_H + 2.0,
+            "#202020",
+        );
+    }
     let fill = (pd.energy / 100.0).clamp(0.0, 1.0);
     let fh = ENERGY_H * fill;
     let flash = pd.energy_deny_flash > 0 && pd.energy_deny_flash % 2 == 0;
-    let ecol = if flash {
-        "#ffffff"
-    } else if pd.energy < 25.0 {
-        "#4060a0"
+    if let Some(fill_h) = sprites.get("energy_fill") {
+        // draw bottom portion of fill strip
+        let src_h = (60.0 * fill) as u32;
+        if src_h > 0 {
+            // approximate with scaled rect tint over sprite crop via stacked pixels
+            let ecol = if flash {
+                "#ffffff"
+            } else if pd.energy < 25.0 {
+                "#4060a0"
+            } else {
+                "#40a0ff"
+            };
+            d.rect(ENERGY_X + 1.0, ENERGY_Y + (ENERGY_H - fh), 4.0, fh, ecol);
+            let _ = fill_h;
+        }
     } else {
-        "#40a0ff"
-    };
-    d.rect(ENERGY_X, ENERGY_Y + (ENERGY_H - fh), ENERGY_W, fh, ecol);
+        let ecol = if flash { "#ffffff" } else { "#40a0ff" };
+        d.rect(ENERGY_X, ENERGY_Y + (ENERGY_H - fh), ENERGY_W, fh, ecol);
+    }
 
-    // Style chip
+    if let Some(chip) = sprites.get("style_chip") {
+        d.sprite(chip, 0, STYLE_X - 1.0, STYLE_Y - 1.0, false);
+    } else {
+        d.rect(STYLE_X, STYLE_Y, 12.0, 12.0, "#303030");
+    }
     let letter = style::rank_letter(pd.style_rank);
     let pulse = pd.style_pulse > 0;
-    let scol = if pulse { "#ffff80" } else { "#d0d0d0" };
-    d.rect(STYLE_X, STYLE_Y, 12.0, 12.0, "#303030");
+    let scol = if pulse { "#ffff80" } else { "#f0f0f0" };
     d.text(letter, STYLE_X + 3.0, STYLE_Y + 10.0, scol);
 
-    // B-item slot empty
-    d.rect(ITEM_X, ITEM_Y, ITEM_S, ITEM_S, "#303030");
-    d.text("—", ITEM_X + 5.0, ITEM_Y + 14.0, "#808080");
+    if let Some(slot) = sprites.get("item_slot") {
+        d.sprite(slot, 0, ITEM_X - 1.0, ITEM_Y - 1.0, false);
+    } else {
+        d.rect(ITEM_X, ITEM_Y, ITEM_S, ITEM_S, "#303030");
+    }
+    d.text("—", ITEM_X + 6.0, ITEM_Y + 14.0, "#808080");
 
-    // Rupees
-    d.text(&format!("₹{}", pd.rupees), 8.0, 24.0, "#40e080");
+    d.text(&format!("₹{}", pd.rupees), 8.0, 26.0, "#40e080");
 }

@@ -66,6 +66,8 @@ pub(crate) struct SharedInput {
     pub prev_held: [bool; BUTTON_COUNT],
     pub debug_held: [bool; DEBUG_COUNT],
     pub prev_debug: [bool; DEBUG_COUNT],
+    /// Latched on keydown so brief F1/F2/H taps still register as pressed.
+    pub debug_pulse: [bool; DEBUG_COUNT],
     pub touch: touch::TouchState,
 }
 
@@ -81,6 +83,7 @@ impl SharedInput {
             prev_held: [false; BUTTON_COUNT],
             debug_held: [false; DEBUG_COUNT],
             prev_debug: [false; DEBUG_COUNT],
+            debug_pulse: [false; DEBUG_COUNT],
             touch: touch::TouchState::new(),
         }
     }
@@ -141,14 +144,14 @@ impl Input {
             };
         }
         let mut debug = [Button::default(); DEBUG_COUNT];
-        for ((slot, held), prev) in debug
+        for ((slot, (&held, &pulse)), &prev) in debug
             .iter_mut()
-            .zip(s.debug_held.iter())
+            .zip(s.debug_held.iter().zip(s.debug_pulse.iter()))
             .zip(s.prev_debug.iter())
         {
             *slot = Button {
-                held: *held,
-                pressed: *held && !*prev,
+                held,
+                pressed: pulse || (held && !prev),
             };
         }
         InputState {
@@ -164,5 +167,6 @@ impl Input {
         let mut s = self.shared.borrow_mut();
         s.prev_held = s.held();
         s.prev_debug = s.debug_held;
+        s.debug_pulse = [false; DEBUG_COUNT];
     }
 }

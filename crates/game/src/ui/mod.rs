@@ -1,17 +1,22 @@
-//! HUD and overlays (functional gray-box; 1B skins with atlas).
+//! HUD, overlays, F2 sprite viewer.
 
 pub mod hud;
+pub mod viewer;
 
 use engine::render::Draw;
 
+use crate::assets::SpriteMap;
 use crate::fx::FxState;
 use crate::world::World;
+
+pub use viewer::SpriteViewer;
 
 pub struct UiState {
     pub debug_overlay: bool,
     pub renders: u32,
     pub fps_est: f32,
     pub fps_accum: u32,
+    pub viewer: SpriteViewer,
 }
 
 impl UiState {
@@ -21,6 +26,7 @@ impl UiState {
             renders: 0,
             fps_est: 60.0,
             fps_accum: 0,
+            viewer: SpriteViewer::new(),
         }
     }
 }
@@ -31,8 +37,8 @@ impl Default for UiState {
     }
 }
 
-pub fn render_hud(d: &mut Draw, world: &World) {
-    hud::draw(d, world);
+pub fn render_hud(d: &mut Draw, world: &World, sprites: &SpriteMap) {
+    hud::draw(d, world, sprites);
 }
 
 pub fn render_debug(d: &mut Draw, world: &World, ui: &UiState, fx: &FxState, player_state: &str) {
@@ -45,12 +51,9 @@ pub fn render_debug(d: &mut Draw, world: &World, ui: &UiState, fx: &FxState, pla
             return;
         };
         match &p.data {
-            crate::world::entity::EntityData::Player(pd) => (
-                p.pos,
-                pd.energy,
-                pd.style_points,
-                world.hitstop,
-            ),
+            crate::world::entity::EntityData::Player(pd) => {
+                (p.pos, pd.energy, pd.style_points, world.hitstop)
+            }
             _ => (p.pos, 0.0, 0.0, world.hitstop),
         }
     };

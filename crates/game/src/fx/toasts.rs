@@ -1,6 +1,8 @@
-//! Toast queue API. 1B may restyle rendering into `game::ui` — keep [`push_toast`].
+//! Toast queue API.
 
 use engine::render::Draw;
+
+use crate::assets::SpriteMap;
 
 const MAX_STACK: usize = 2;
 const LIFE: u16 = 90;
@@ -26,7 +28,7 @@ impl Toasts {
         self.queue.retain(|t| t.ticks > 0);
     }
 
-    pub fn render(&self, d: &mut Draw) {
+    pub fn render(&self, d: &mut Draw, sprites: &SpriteMap) {
         for (i, t) in self.queue.iter().enumerate() {
             let fade = if t.ticks < 20 {
                 t.ticks as f32 / 20.0
@@ -35,9 +37,12 @@ impl Toasts {
             } else {
                 1.0
             };
-            let y = 28.0 + i as f32 * 14.0;
-            let color = format!("rgba(255,240,200,{fade})");
+            let y = 28.0 + i as f32 * 18.0;
             let x = 240.0 - t.text.len() as f32 * 2.8;
+            if let Some(panel) = sprites.get("toast_panel") {
+                d.sprite(panel, 0, x - 8.0, y - 10.0, false);
+            }
+            let color = format!("rgba(255,240,200,{fade})");
             d.text(t.text, x, y, &color);
         }
     }

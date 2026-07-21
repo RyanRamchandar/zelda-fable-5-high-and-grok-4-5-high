@@ -6,6 +6,7 @@ mod toasts;
 
 use engine::render::Draw;
 
+use crate::assets::SpriteMap;
 use crate::math::{Dir4, Vec2};
 use crate::world::World;
 
@@ -121,8 +122,8 @@ impl FxState {
         }
     }
 
-    pub fn render_screen(&self, d: &mut Draw) {
-        self.toasts.render(d);
+    pub fn render_screen(&self, d: &mut Draw, sprites: &SpriteMap) {
+        self.toasts.render(d, sprites);
     }
 
     pub fn particle_count(&self) -> usize {

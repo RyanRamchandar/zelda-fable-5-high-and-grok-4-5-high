@@ -92,3 +92,45 @@ Ready: scaffold proves render, fixed loop, keyboard + touch (+ gamepad code), au
 
 ### Gate readiness for 1B
 **YES** — seams frozen as above. Residual risks: perfect-block / reflect only verified via code path + H-key hook (needs human feel pass); gamepad still untested on hardware; toast→ui move is 1B's call.
+
+## Phase 1B completion — 2026-07-21 (Grok 4.5 High Fast worker)
+
+### What landed
+- **M1 atlas**: `content::art::palette` (~48 colors + char map + `PaletteSwap`), `SpriteDef`/`all_bakes()`, `engine::atlas` shelf-pack bake (hidden `#atlas` canvas — required for Chromium `drawImage`), `Draw::set_atlas`/`sprite`/`sprite_scaled`, `game::assets::bake` decode glue. App bakes once at start → `draw.set_atlas` + `Game::new(..., sprites)`.
+- **M2 sheets**: programmatic Minish-Cap-ish grids in `player_base`/`player_actions`/`enemies`/`tiles`/`ui` (left = `flip_x` of right). F2 sprite viewer in `game::ui::viewer` (pauses world; 1×/3×/flip; sheet cycle + J rate). Dummies use `slime_dummy` palette-swap.
+- **M3 enemies**: slime chase/lunge, bat sine swoop, octorok spit+hide (sword-immune while hidden), `OctorokRock` reflectable via perfect block (projectile kept alive through damage route). Wave director W1–W3+ escalate, 45-tick telegraph, CLEAR rupee bonus. Enemy SFX ids appended (adapter covers automatically).
+- **M4 HUD**: atlas hearts/energy frame/style chip/item slot/toast panel; layout consts preserved. Player death → fountain respawn 3 hearts + "FAIRY RESCUE" toast (1A left death open).
+
+### Seams consumed
+All 1A frozen seams honored. Additive only: `EntityKind::{Slime,Bat,Octorok,OctorokRock}`, matching `EntityData`, enemy tuning rows, SFX ids. `resolve_hits` extended for rocks; hostile projectiles no longer despawn before shield/reflect can run.
+
+### Deviations / tuning
+- Drop table: nothing chance 70%→55%, energy more common (wave combat starve risk) — logged.
+- Atlas canvas must be DOM-attached (`display:none`); detached canvas drew nothing under Playwright Chromium.
+- Debug F1/F2/H use `debug_pulse` latch so sub-frame key taps still toggle (Playwright + quick taps).
+- Wave alive count includes telegraphing spawns (body=None) so CLEAR doesn't fire instantly.
+- Art authored via generative pixel painter → reviewed grids (not AI image dumps); feet pinned on walk cycles; polish is cleanline-readable but not final production Minish Cap quality.
+
+### Verification
+- `cargo check` + `clippy -D warnings` (wasm32) clean (use rustup `~/.cargo/bin` ahead of Homebrew rustc).
+- `env -u NO_COLOR trunk build --release` → `dist/` ok.
+- Playwright vs `python3 -m http.server 8090 --directory dist`:
+  - Floor/player/dummy sprites + HUD hearts render
+  - F2 viewer shows `player_idle` 1×/3×/flip over floor samples
+  - Save roundtrip (`shard_save_v1` x advances)
+  - Wave director toasts observed earlier; full 3-wave human feel pass still recommended
+
+### DoD checklist
+1. Atlas bake + sprite draw — yes  
+2. Player sprited + F2 in-motion — yes (walk footing pinned; further polish welcome)  
+3. Three families + telegraphs + combat pipeline — yes  
+4. Rock reflect + hide immune — yes (code + seam; human perfect-block feel still advised)  
+5. Waves escalate + CLEAR bonus — yes  
+6. HUD skinned — yes  
+7. Distinct enemy/wave SFX — yes  
+8. Perf ~60 with small wave — F1 present; no hitch observed in smoke  
+9. check/clippy/trunk; files <600 — yes  
+10. This completion entry — yes  
+
+### Phase 1 overall gate (ready for Phase 2 brief?)
+**YES** — with residual human playtest: perfect-block rock reflect feel, gamepad hardware, longer wave-3+ survival, art polish pass if planner wants higher bar.
