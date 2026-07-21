@@ -147,12 +147,12 @@ pub fn paint(map: &mut MapDef) {
             group: flags::GRP_CAMP_GUARD,
         });
     }
-    // Wave 2 (42): 2 spears + 2 torches — locked until 41 clears.
+    // Wave 2 (42): 2 spears + 1 torch + 1 bat — less simultaneous lob pressure.
     for (tx, ty, kind) in [
         (199u32, 56, SpawnKind::RaiderSpear),
         (207, 56, SpawnKind::RaiderSpear),
         (199, 66, SpawnKind::RaiderTorch),
-        (207, 66, SpawnKind::RaiderTorch),
+        (207, 66, SpawnKind::Bat),
     ] {
         map.spawns.push(SpawnDef {
             tx,
@@ -161,11 +161,11 @@ pub fn paint(map: &mut MapDef) {
             group: flags::GRP_CAMP_W2,
         });
     }
-    // Wave 3 (43): 3 spears + 1 torch + 1 skeleton veteran.
+    // Wave 3 (43): 2 spears + 1 bat + 1 torch + 1 skeleton (was 3 spears).
     for (tx, ty, kind) in [
         (198u32, 57, SpawnKind::RaiderSpear),
-        (203, 55, SpawnKind::RaiderSpear),
         (208, 57, SpawnKind::RaiderSpear),
+        (203, 55, SpawnKind::Bat),
         (203, 65, SpawnKind::RaiderTorch),
         (205, 62, SpawnKind::Skeleton),
     ] {

@@ -18,7 +18,7 @@ use crate::world::entity::{EntityData, EntityKind, PickupKind};
 use crate::world::{ActiveAttack, AttackKind, World, WorldEvent};
 use crate::Game;
 
-const BLOCK_PUSH_TICKS: u16 = 8;
+const BLOCK_PUSH_TICKS: u16 = 6; // Phase 5: snappier push (was 8)
 const TILE: f32 = TILE_PX;
 
 #[derive(Clone, Debug)]

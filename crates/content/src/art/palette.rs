@@ -204,3 +204,9 @@ pub const ROCK_WARM: PaletteSwap = PaletteSwap {
     from: &[ROCK, ROCK_DARK],
     to: &[GOLD_DARK, STONE_DARK],
 };
+
+/// Hero's Tunic shop cosmetic: green tunic ramp → gold/cream.
+pub const TUNIC_HERO: PaletteSwap = PaletteSwap {
+    from: &[TUNIC_LIGHT, TUNIC, TUNIC_MID, TUNIC_DARK],
+    to: &[GOLD_LIGHT, GOLD, GOLD_DARK, WOOD],
+};

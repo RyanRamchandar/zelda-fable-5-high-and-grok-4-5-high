@@ -4,7 +4,7 @@ use engine::render::Draw;
 
 use crate::assets::SpriteMap;
 use crate::math::Dir4;
-use crate::world::entity::{Entity, EntityData, EntityKind, WispState};
+use crate::world::entity::{Entity, EntityData, EntityKind, WardenAttack, WispState};
 
 pub fn try_render_enemy(d: &mut Draw, e: &Entity, sprites: &SpriteMap) -> bool {
     match e.kind {
@@ -82,6 +82,15 @@ pub fn try_render_enemy(d: &mut Draw, e: &Entity, sprites: &SpriteMap) -> bool {
         }
         EntityKind::RaiderSpear => {
             render_tall(d, e, sprites, "raider_spear", 5, "rgba(200,80,60,0.35)");
+            // Guard pose: cyan shield disc so frontal block is readable.
+            if e.anim.frame == 5 {
+                d.circle(
+                    e.pos.x + 8.0,
+                    e.pos.y + 4.0,
+                    9.0,
+                    "rgba(120,200,255,0.35)",
+                );
+            }
             true
         }
         EntityKind::RaiderTorch => {
@@ -125,6 +134,28 @@ pub fn try_render_enemy(d: &mut Draw, e: &Entity, sprites: &SpriteMap) -> bool {
                 );
             } else {
                 d.rect(e.pos.x, e.pos.y, 48.0, 48.0, "#6a6058");
+            }
+            // Fake core: red ring (real gale uses toast + long expose, no ring).
+            if matches!(
+                &e.data,
+                EntityData::GraniteWarden(d) if d.attack == WardenAttack::FakeFlash
+            ) {
+                d.circle(
+                    e.pos.x + 24.0,
+                    e.pos.y + 24.0,
+                    22.0,
+                    "rgba(255,80,60,0.45)",
+                );
+            } else if matches!(
+                &e.data,
+                EntityData::GraniteWarden(d) if d.core_exposed > 0
+            ) {
+                d.circle(
+                    e.pos.x + 24.0,
+                    e.pos.y + 24.0,
+                    26.0,
+                    "rgba(120,220,255,0.35)",
+                );
             }
             true
         }

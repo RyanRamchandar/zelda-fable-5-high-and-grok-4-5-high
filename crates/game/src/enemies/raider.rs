@@ -343,7 +343,9 @@ pub fn update_torch(world: &mut World, id: EntityId) {
 
     if lob {
         let origin = world.get(id).map(|e| e.center()).unwrap_or(epos);
-        let dir = ppos.sub(origin).normalize_or_zero();
+        // Aim slightly below target so the visual arc lands nearer the player.
+        let aim = Vec2::new(ppos.x, ppos.y + 8.0);
+        let dir = aim.sub(origin).normalize_or_zero();
         spawn_torch_proj(world, origin, dir);
     }
 
@@ -392,9 +394,9 @@ pub fn update_projectiles(world: &mut World) {
                     d.age = d.age.saturating_add(1);
                     d.life = d.life.saturating_sub(1);
                     let t = d.age as f32 / tuning::TORCH_PROJ_LIFE as f32;
-                    let arc = (t * std::f32::consts::PI).sin() * 18.0;
+                    let arc = (t * std::f32::consts::PI).sin() * tuning::TORCH_PROJ_ARC;
                     e.pos = e.pos.add(d.dir.scale(tuning::TORCH_PROJ_SPEED));
-                    e.pos.y -= arc * 0.15;
+                    e.pos.y -= arc * 0.12;
                     e.anim.frame = (d.age / 4) % 2;
                     (d.life == 0 || d.hit, e.center())
                 };

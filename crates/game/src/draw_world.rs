@@ -7,7 +7,7 @@ use engine::render::Draw;
 
 use crate::assets::SpriteMap;
 use crate::math::Dir4;
-use crate::world::entity::{Entity, EntityData, EntityKind, PlayerState};
+use crate::world::entity::{Entity, EntityData, EntityKind};
 use crate::world::World;
 
 pub struct TileSprites {
@@ -290,12 +290,12 @@ fn visible_chunk_range(map: &content::maps::MapDef, cam: crate::math::Vec2) -> (
     (cx0, cy0, cx1, cy1)
 }
 
-pub fn render_entity(d: &mut Draw, e: &Entity, sprites: &SpriteMap) {
+pub fn render_entity(d: &mut Draw, e: &Entity, sprites: &SpriteMap, tunic: bool) {
     if crate::draw_enemies::try_render_enemy(d, e, sprites) {
         return;
     }
     match e.kind {
-        EntityKind::Player => render_player(d, e, sprites),
+        EntityKind::Player => crate::draw_player::render_player(d, e, sprites, tunic),
         EntityKind::Pickup => {
             if let EntityData::Pickup(pd) = &e.data {
                 if pd.life < crate::combat::tuning::PICKUP_BLINK && (pd.life / 4) % 2 == 0 {
@@ -414,108 +414,5 @@ pub fn render_entity(d: &mut Draw, e: &Entity, sprites: &SpriteMap) {
         | EntityKind::PebbleCrawler
         | EntityKind::TorchProj
         | EntityKind::TorchFlame => {}
-    }
-}
-
-fn render_player(d: &mut Draw, e: &Entity, sprites: &SpriteMap) {
-    let iframes = e.health.map(|h| h.iframes > 0).unwrap_or(false);
-    if iframes && (e.health.unwrap().iframes / 2).is_multiple_of(2) {
-        return;
-    }
-    let flash = e.health.map(|h| h.flash > 0).unwrap_or(false);
-    let EntityData::Player(pd) = &e.data else {
-        return;
-    };
-
-    let (key, frame, flip) = player_sprite(e.facing, pd, e);
-    let _ = flash;
-    if matches!(pd.state, PlayerState::Charging { tick } if tick >= 20) {
-        if let Some(h) = sprites.get("player_charge_glow") {
-            d.sprite(h, 0, e.pos.x, e.pos.y - 8.0, flip);
-        }
-    }
-    if let Some(h) = sprites.get(key) {
-        d.sprite(h, frame, e.pos.x, e.pos.y - 8.0, flip);
-    }
-}
-
-fn player_sprite(
-    facing: Dir4,
-    pd: &crate::world::entity::PlayerData,
-    e: &Entity,
-) -> (&'static str, u32, bool) {
-    let flip = facing == Dir4::Left;
-    let dir_slot = match facing {
-        Dir4::Down => 0,
-        Dir4::Up => 1,
-        Dir4::Right | Dir4::Left => 2,
-    };
-
-    if e.health.map(|h| h.flash > 0).unwrap_or(false) && pd.state == PlayerState::Idle {
-        return ("player_hurt", 0, flip);
-    }
-
-    match pd.state {
-        PlayerState::Swing { stage, tick } => {
-            let frames = 3u32;
-            let f = ((tick as u32 * frames) / crate::combat::tuning::SLASH_TICKS as u32).min(2);
-            let key = match (stage, dir_slot) {
-                (0, 0) => "player_slash_d",
-                (0, 1) => "player_slash_u",
-                (0, _) => "player_slash_r",
-                (1, 0) => "player_bslash_d",
-                (1, 1) => "player_bslash_u",
-                (1, _) => "player_bslash_r",
-                (_, 0) => "player_lunge_d",
-                (_, 1) => "player_lunge_u",
-                _ => "player_lunge_r",
-            };
-            let f = if stage >= 2 { f.min(1) } else { f };
-            (key, f, flip)
-        }
-        PlayerState::Spin { tick } => ("player_spin", (tick as u32 / 2) % 8, false),
-        PlayerState::Dash { tick } | PlayerState::DashRecovery { tick } => {
-            let key = match dir_slot {
-                0 => "player_dash_d",
-                1 => "player_dash_u",
-                _ => "player_dash_r",
-            };
-            (key, (tick as u32 / 4) % 2, flip)
-        }
-        PlayerState::Charging { .. } => {
-            let base = idle_frame(dir_slot, pd.walk_timer);
-            ("player_idle", base, flip)
-        }
-        PlayerState::LedgeHop { .. } => {
-            let key = match dir_slot {
-                0 => "player_dash_d",
-                1 => "player_dash_u",
-                _ => "player_dash_r",
-            };
-            (key, 0, flip)
-        }
-        PlayerState::Idle => {
-            if pd.shield_held {
-                ("player_shield", dir_slot.min(2) as u32, flip)
-            } else if pd.move_blend > 0.2 || e.vel.len() > 0.2 {
-                let key = match dir_slot {
-                    0 => "player_walk_d",
-                    1 => "player_walk_u",
-                    _ => "player_walk_r",
-                };
-                (key, ((pd.walk_timer / 8) % 4) as u32, flip)
-            } else {
-                ("player_idle", idle_frame(dir_slot, e.anim.timer), flip)
-            }
-        }
-    }
-}
-
-fn idle_frame(dir_slot: i32, timer: u16) -> u32 {
-    let breath = ((timer / 24) % 2) as u32;
-    match dir_slot {
-        0 => breath,
-        1 => 2 + breath,
-        _ => 4 + breath,
     }
 }

@@ -206,6 +206,16 @@ pub(crate) fn tick_fake_flash(game: &mut Game, warden: EntityId) {
             }
         }
         game.world.push_event(WorldEvent::Sfx(SfxId::FakeFlash));
+        game.world.push_event(WorldEvent::FxRequest(FxKind::Toast {
+            text: "FALSE CORE!",
+        }));
+        let pos = game
+            .world
+            .get(warden)
+            .map(|e| e.center())
+            .unwrap_or(Vec2::ZERO);
+        game.world
+            .push_event(WorldEvent::FxRequest(FxKind::BlockSpark { pos }));
     }
 }
 

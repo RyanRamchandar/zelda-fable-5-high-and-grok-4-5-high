@@ -1,9 +1,11 @@
 //! Particles, damage numbers, slash arcs, toasts.
 
+mod ambient;
 mod numbers;
 mod particles;
 mod toasts;
 
+use content::maps::MapId;
 use engine::render::Draw;
 
 use crate::assets::SpriteMap;
@@ -180,6 +182,7 @@ fn draw_arc(d: &mut Draw, arc: &SlashArc) {
     }
 }
 
-pub fn update(_world: &mut World, fx: &mut FxState) {
+pub fn update(world: &mut World, fx: &mut FxState, map_id: MapId, direct: bool) {
+    ambient::tick(world, &mut fx.particles, map_id, direct);
     fx.update();
 }

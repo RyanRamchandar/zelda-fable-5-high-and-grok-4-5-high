@@ -5,6 +5,7 @@ mod boss;
 mod combat;
 mod debug;
 mod draw_enemies;
+mod draw_player;
 mod draw_world;
 mod enemies;
 mod events;
@@ -298,7 +299,12 @@ impl Game {
 
         if self.world.hitstop > 0 {
             self.world.hitstop -= 1;
-            fx::update(&mut self.world, &mut self.fx);
+            fx::update(
+                &mut self.world,
+                &mut self.fx,
+                self.current_map,
+                self.map_stats.direct,
+            );
             return events::drain(self, input);
         }
 
@@ -344,7 +350,12 @@ impl Game {
         puzzle::update(self);
         combat::resolve_hits(&mut self.world);
         items::update(self);
-        fx::update(&mut self.world, &mut self.fx);
+        fx::update(
+            &mut self.world,
+            &mut self.fx,
+            self.current_map,
+            self.map_stats.direct,
+        );
         self.ui.banner.update();
         if let Some(json) = state::check_triggers(self) {
             self.pending_save = Some(json);
@@ -418,9 +429,10 @@ impl Game {
             let yb = self.world.get(*b).map(|e| e.pos.y).unwrap_or(0.0);
             ya.total_cmp(&yb)
         });
+        let tunic = crate::save_data::has_flag(&self.flags, content::flags::TUNIC_BOUGHT);
         for id in ids {
             if let Some(e) = self.world.get(id) {
-                draw_world::render_entity(d, e, &self.sprites);
+                draw_world::render_entity(d, e, &self.sprites, tunic);
             }
         }
 

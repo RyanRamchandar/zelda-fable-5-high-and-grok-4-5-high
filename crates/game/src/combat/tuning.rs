@@ -41,7 +41,8 @@ pub const BEAM_RANGE: f32 = 128.0;
 pub const BEAM_DAMAGE_MULT: f32 = 0.75;
 
 // --- Shield ---
-pub const PERFECT_BLOCK_WINDOW: u16 = 6;
+// Phase 5: 6→8 (~+33%) so perfect block is hittable at 60 fps.
+pub const PERFECT_BLOCK_WINDOW: u16 = 8;
 pub const BLOCK_ENERGY: f32 = 5.0;
 pub const PERFECT_BLOCK_REFUND: f32 = 10.0;
 pub const BLOCK_PUSHBACK: f32 = 1.2;
@@ -129,7 +130,8 @@ pub const BOMB_TILE_RADIUS: f32 = 28.0;
 pub const BOMB_DAMAGE: f32 = 2.0;
 pub const BOMB_PLAYER_DAMAGE: i32 = 2;
 pub const BOMB_KNOCKBACK: f32 = 3.0;
-pub const ITEM_TAP_MAX_TICKS: u16 = 8;
+// Phase 5: 8→10 — clearer tap-bomb vs hold-shield boundary.
+pub const ITEM_TAP_MAX_TICKS: u16 = 10;
 
 // --- Act 1B enemies (Phase 2C-B) ---
 pub const RAIDER_SPEAR_HP: i32 = 4;
@@ -137,9 +139,9 @@ pub const RAIDER_SPEAR_CONTACT: i32 = 1;
 pub const RAIDER_SPEAR_POKE: i32 = 2;
 pub const RAIDER_SPEAR_APPROACH: f32 = 26.0;
 pub const RAIDER_SPEAR_WALK: f32 = 0.55;
-pub const RAIDER_SPEAR_POKE_TELE: u16 = 25;
+pub const RAIDER_SPEAR_POKE_TELE: u16 = 28; // Phase 5: +3 readability
 pub const RAIDER_SPEAR_THRUST: u16 = 8;
-pub const RAIDER_SPEAR_GUARD: u16 = 30;
+pub const RAIDER_SPEAR_GUARD: u16 = 36; // Phase 5: longer guard pose
 pub const RAIDER_SPEAR_REACH: f32 = 20.0;
 
 pub const RAIDER_TORCH_HP: i32 = 3;
@@ -149,20 +151,21 @@ pub const RAIDER_TORCH_KEEP_MAX: f32 = 110.0;
 pub const RAIDER_TORCH_WALK: f32 = 0.5;
 pub const RAIDER_TORCH_TELE: u16 = 30;
 pub const RAIDER_TORCH_COOLDOWN: u16 = 90;
-pub const TORCH_PROJ_SPEED: f32 = 2.2;
-pub const TORCH_PROJ_LIFE: u16 = 40;
+pub const TORCH_PROJ_SPEED: f32 = 2.0; // Phase 5: slower + flatter arc for aim
+pub const TORCH_PROJ_LIFE: u16 = 44;
+pub const TORCH_PROJ_ARC: f32 = 10.0;
 pub const TORCH_FLAME_LIFE: u16 = 90;
 pub const TORCH_FLAME_TICK: u16 = 30;
 pub const TORCH_FLAME_DAMAGE: i32 = 1;
 
 pub const WISP_HP: i32 = 2;
 pub const WISP_CONTACT: i32 = 1;
-pub const WISP_DRIFT: f32 = 0.5;
-pub const WISP_VISIBLE: u16 = 90;
+pub const WISP_DRIFT: f32 = 0.38; // Phase 5: less harassment
+pub const WISP_VISIBLE: u16 = 100;
 pub const WISP_FADE_TELE: u16 = 40;
-pub const WISP_PHASED: u16 = 60;
-pub const WISP_REAPPEAR_MAX: f32 = 60.0;
-pub const WISP_REAPPEAR_MIN: f32 = 12.0;
+pub const WISP_PHASED: u16 = 70;
+pub const WISP_REAPPEAR_MAX: f32 = 72.0;
+pub const WISP_REAPPEAR_MIN: f32 = 22.0;
 
 pub const SKELETON_HP: i32 = 4;
 pub const SKELETON_CONTACT: i32 = 1;

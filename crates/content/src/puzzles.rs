@@ -107,7 +107,7 @@ pub static OVERWORLD: OverworldPuzzles = OverworldPuzzles {
     ],
     chime_finale: ChimeFinaleDef {
         chimes: [(70, 112), (78, 112), (74, 118)],
-        window_ticks: 240,
+        window_ticks: 270, // Phase 5: 4.0s → 4.5s finale window
         flag: flags::PUZZLE_CHIMES_DONE,
     },
     plate_court: PlateCourtDef {

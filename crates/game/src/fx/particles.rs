@@ -11,6 +11,8 @@ pub enum ParticleKind {
     Poof,
     Shimmer,
     Fountain,
+    Leaf,
+    Ember,
 }
 
 struct Particle {
@@ -20,6 +22,7 @@ struct Particle {
     max: u16,
     size: f32,
     kind: ParticleKind,
+    ambient: bool,
 }
 
 pub struct Particles {
@@ -37,6 +40,10 @@ impl Particles {
         self.list.len()
     }
 
+    pub fn ambient_count(&self) -> usize {
+        self.list.iter().filter(|p| p.ambient).count()
+    }
+
     pub fn spawn_dust(&mut self, pos: Vec2, rng: &mut fastrand::Rng) {
         for _ in 0..3 {
             self.push(
@@ -45,6 +52,7 @@ impl Particles {
                 18,
                 1.5,
                 ParticleKind::Dust,
+                false,
             );
         }
     }
@@ -59,6 +67,7 @@ impl Particles {
                 14,
                 2.0,
                 ParticleKind::Impact,
+                false,
             );
         }
     }
@@ -73,6 +82,7 @@ impl Particles {
                 22,
                 2.5,
                 ParticleKind::Poof,
+                false,
             );
         }
     }
@@ -84,6 +94,7 @@ impl Particles {
             12,
             1.5,
             ParticleKind::Shimmer,
+            false,
         );
     }
 
@@ -94,10 +105,41 @@ impl Particles {
             20,
             1.5,
             ParticleKind::Fountain,
+            true,
         );
     }
 
-    fn push(&mut self, pos: Vec2, vel: Vec2, life: u16, size: f32, kind: ParticleKind) {
+    pub fn spawn_ambient_leaf(&mut self, near: Vec2, rng: &mut fastrand::Rng) {
+        self.push(
+            near.add(Vec2::new(rng.f32() * 96.0 - 48.0, rng.f32() * 48.0 - 56.0)),
+            Vec2::new(rng.f32() * 0.35 + 0.1, rng.f32() * 0.25 + 0.15),
+            90 + (rng.u16(..) % 40),
+            1.5 + rng.f32(),
+            ParticleKind::Leaf,
+            true,
+        );
+    }
+
+    pub fn spawn_ambient_ember(&mut self, pos: Vec2, rng: &mut fastrand::Rng) {
+        self.push(
+            pos.add(Vec2::new(rng.f32() * 6.0 - 3.0, rng.f32() * 4.0 - 8.0)),
+            Vec2::new(rng.f32() * 0.3 - 0.15, -0.35 - rng.f32() * 0.25),
+            28 + (rng.u16(..) % 20),
+            1.2,
+            ParticleKind::Ember,
+            true,
+        );
+    }
+
+    fn push(
+        &mut self,
+        pos: Vec2,
+        vel: Vec2,
+        life: u16,
+        size: f32,
+        kind: ParticleKind,
+        ambient: bool,
+    ) {
         if self.list.len() >= CAP {
             self.list.remove(0);
         }
@@ -108,6 +150,7 @@ impl Particles {
             max: life,
             size,
             kind,
+            ambient,
         });
     }
 
@@ -129,6 +172,8 @@ impl Particles {
                 ParticleKind::Poof => format!("rgba(200,200,210,{t})"),
                 ParticleKind::Shimmer => format!("rgba(180,220,255,{t})"),
                 ParticleKind::Fountain => format!("rgba(120,220,200,{t})"),
+                ParticleKind::Leaf => format!("rgba(140,190,70,{t})"),
+                ParticleKind::Ember => format!("rgba(255,160,60,{t})"),
             };
             d.rect(p.pos.x, p.pos.y, p.size, p.size, &color);
         }

@@ -498,7 +498,8 @@ fn update_multi(game: &mut Game) {
 
 fn tile_hit(center: Vec2, tx: u32, ty: u32) -> bool {
     let tc = Vec2::new(tx as f32 * TILE_PX + 8.0, ty as f32 * TILE_PX + 8.0);
-    center.sub(tc).len() < 14.0
+    // Phase 5: 14→16 seal/crystal throw tolerance.
+    center.sub(tc).len() < 16.0
 }
 
 fn tile_near(center: Vec2, tx: u32, ty: u32) -> bool {

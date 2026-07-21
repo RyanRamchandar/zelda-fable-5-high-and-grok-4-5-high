@@ -169,16 +169,10 @@ fn dress_trials(map: &mut MapDef) {
         kind: SpawnKind::RaiderTorch,
         group: flags::GRP_DNG_TRIALS_2,
     });
-    // Trials 3: wisps + octorok
+    // Trials 3: 1 wisp + octorok (Phase 5: drop second wisp for shutter density).
     map.spawns.push(SpawnDef {
         tx: 6,
         ty: 52,
-        kind: SpawnKind::Wisp,
-        group: flags::GRP_DNG_TRIALS_3,
-    });
-    map.spawns.push(SpawnDef {
-        tx: 12,
-        ty: 56,
         kind: SpawnKind::Wisp,
         group: flags::GRP_DNG_TRIALS_3,
     });

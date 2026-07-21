@@ -45,28 +45,38 @@ pub fn all_sprites() -> Vec<&'static SpriteDef> {
 }
 
 pub fn all_bakes() -> Vec<SpriteBake> {
-    vec![
-        // Player
-        bake(&player_base::PLAYER_IDLE),
-        bake(&player_base::PLAYER_WALK_D),
-        bake(&player_base::PLAYER_WALK_U),
-        bake(&player_base::PLAYER_WALK_R),
-        bake(&player_base::PLAYER_DASH_D),
-        bake(&player_base::PLAYER_DASH_U),
-        bake(&player_base::PLAYER_DASH_R),
-        bake(&player_base::PLAYER_SHIELD),
-        bake(&player_base::PLAYER_HURT),
-        bake(&player_base::PLAYER_CHARGE_GLOW),
-        bake(&player_actions::PLAYER_SLASH_D),
-        bake(&player_actions::PLAYER_SLASH_U),
-        bake(&player_actions::PLAYER_SLASH_R),
-        bake(&player_actions::PLAYER_BSLASH_D),
-        bake(&player_actions::PLAYER_BSLASH_U),
-        bake(&player_actions::PLAYER_BSLASH_R),
-        bake(&player_actions::PLAYER_LUNGE_D),
-        bake(&player_actions::PLAYER_LUNGE_U),
-        bake(&player_actions::PLAYER_LUNGE_R),
-        bake(&player_actions::PLAYER_SPIN),
+    let mut out = Vec::with_capacity(220);
+    // Player + Hero's Tunic palette swaps
+    for (def, tunic_key) in [
+        (&player_base::PLAYER_IDLE, "player_idle_tunic"),
+        (&player_base::PLAYER_WALK_D, "player_walk_d_tunic"),
+        (&player_base::PLAYER_WALK_U, "player_walk_u_tunic"),
+        (&player_base::PLAYER_WALK_R, "player_walk_r_tunic"),
+        (&player_base::PLAYER_DASH_D, "player_dash_d_tunic"),
+        (&player_base::PLAYER_DASH_U, "player_dash_u_tunic"),
+        (&player_base::PLAYER_DASH_R, "player_dash_r_tunic"),
+        (&player_base::PLAYER_SHIELD, "player_shield_tunic"),
+        (&player_base::PLAYER_HURT, "player_hurt_tunic"),
+        (&player_base::PLAYER_CHARGE_GLOW, "player_charge_glow_tunic"),
+        (&player_actions::PLAYER_SLASH_D, "player_slash_d_tunic"),
+        (&player_actions::PLAYER_SLASH_U, "player_slash_u_tunic"),
+        (&player_actions::PLAYER_SLASH_R, "player_slash_r_tunic"),
+        (&player_actions::PLAYER_BSLASH_D, "player_bslash_d_tunic"),
+        (&player_actions::PLAYER_BSLASH_U, "player_bslash_u_tunic"),
+        (&player_actions::PLAYER_BSLASH_R, "player_bslash_r_tunic"),
+        (&player_actions::PLAYER_LUNGE_D, "player_lunge_d_tunic"),
+        (&player_actions::PLAYER_LUNGE_U, "player_lunge_u_tunic"),
+        (&player_actions::PLAYER_LUNGE_R, "player_lunge_r_tunic"),
+        (&player_actions::PLAYER_SPIN, "player_spin_tunic"),
+    ] {
+        out.push(bake(def));
+        out.push(SpriteBake {
+            def,
+            swap: Some(&palette::TUNIC_HERO),
+            key: tunic_key,
+        });
+    }
+    out.extend([
         // Enemies + variants
         bake(&enemies::SLIME),
         SpriteBake {
@@ -245,7 +255,8 @@ pub fn all_bakes() -> Vec<SpriteBake> {
         bake(&ui::UI_TOAST_PANEL),
         bake(&ui_meta::TITLE_LOGO),
         bake(&ui_meta::TOUCH_ICONS),
-    ]
+    ]);
+    out
 }
 
 fn bake(def: &'static SpriteDef) -> SpriteBake {
