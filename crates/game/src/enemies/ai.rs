@@ -87,6 +87,8 @@ pub fn count_alive_enemies(world: &World) -> usize {
                     | EntityKind::RaiderTorch
                     | EntityKind::Wisp
                     | EntityKind::Skeleton
+                    | EntityKind::Ironshell
+                    | EntityKind::PebbleCrawler
             )
         })
         .count()

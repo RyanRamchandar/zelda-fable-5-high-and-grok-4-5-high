@@ -1,6 +1,8 @@
 //! HUD, overlays, F2 sprite viewer, region banners, dialog, minimap.
 
 pub mod banner;
+pub mod boss_bar;
+pub mod credits;
 pub mod dialog;
 pub mod dungeon_map;
 pub mod hud;
@@ -17,6 +19,7 @@ use crate::fx::FxState;
 use crate::world::World;
 
 pub use banner::BannerState;
+pub use credits::CreditsState;
 pub use dialog::DialogState;
 pub use minimap::MinimapState;
 pub use shop::ShopState;
@@ -32,6 +35,7 @@ pub struct UiState {
     pub dialog: DialogState,
     pub minimap: MinimapState,
     pub shop: ShopState,
+    pub credits: CreditsState,
 }
 
 impl UiState {
@@ -46,6 +50,7 @@ impl UiState {
             dialog: DialogState::new(),
             minimap: MinimapState::new(),
             shop: ShopState::new(),
+            credits: CreditsState::new(),
         }
     }
 }

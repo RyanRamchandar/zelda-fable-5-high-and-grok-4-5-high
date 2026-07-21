@@ -213,6 +213,19 @@ pub fn on_group_cleared(game: &mut Game, group: u16) {
         content::flags::GRP_DNG_TRIALS_1 => dungeon::ROOM_TRIALS_1,
         content::flags::GRP_DNG_TRIALS_2 => dungeon::ROOM_TRIALS_2,
         content::flags::GRP_DNG_TRIALS_3 => dungeon::ROOM_TRIALS_3,
+        content::flags::GRP_DNG_SANCTUM => {
+            crate::save_data::set_flag(&mut game.flags, content::flags::SANCTUM_CLEARED);
+            game.world.push_event(crate::world::WorldEvent::FxRequest(
+                crate::fx::FxKind::Toast {
+                    text: "THE CORE QUIETS",
+                },
+            ));
+            let save = crate::state::save_from_game(game);
+            if let Some(json) = save.to_json() {
+                game.pending_save = Some(json);
+            }
+            dungeon::ROOM_SANCTUM
+        }
         _ => return,
     };
     rooms::open_room_shutters(game, room);

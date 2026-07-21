@@ -1,5 +1,6 @@
 //! Indexed-color sprite/tile grids → baked by `game::assets` into `engine::atlas`.
 
+pub mod boss;
 pub mod enemies;
 pub mod enemies_act1b;
 pub mod npcs;
@@ -227,6 +228,11 @@ pub fn all_bakes() -> Vec<SpriteBake> {
         bake(&props_dungeon::D_SEAL_DOOR),
         bake(&props_dungeon::D_SEAL_BROKEN),
         bake(&items::BOOMERANG),
+        // Phase 3B boss
+        bake(&boss::IRONSHELL),
+        bake(&boss::GRANITE_WARDEN),
+        bake(&boss::WIND_CRYSTAL),
+        bake(&boss::PEBBLE),
         // UI
         bake(&ui::UI_HEART_FULL),
         bake(&ui::UI_HEART_HALF),

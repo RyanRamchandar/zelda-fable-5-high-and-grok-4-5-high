@@ -30,6 +30,10 @@ pub enum EntityKind {
     RaiderTorch,
     Wisp,
     Skeleton,
+    Ironshell,
+    GraniteWarden,
+    WindCrystal,
+    PebbleCrawler,
     TorchProj,
     TorchFlame,
     Sign,
@@ -89,6 +93,10 @@ pub enum EntityData {
     RaiderTorch(RaiderTorchData),
     Wisp(WispData),
     Skeleton(SkeletonData),
+    Ironshell(IronshellData),
+    GraniteWarden(WardenData),
+    WindCrystal(WindCrystalData),
+    PebbleCrawler(PebbleData),
     TorchProj(TorchProjData),
     TorchFlame(TorchFlameData),
     Sign(SignData),
@@ -255,9 +263,10 @@ pub struct BeamData {
 }
 
 pub use entity_data::{
-    BatData, BatState, BoomerangData, BoomerangPhase, OctorokData, OctorokState, RaiderSpearData,
-    RaiderSpearState, RaiderTorchData, RaiderTorchState, RockData, SkeletonData, SkeletonState,
-    SlimeData, SlimeState, TorchFlameData, TorchProjData, WispData, WispState,
+    BatData, BatState, BoomerangData, BoomerangPhase, IronshellData, IronshellState, OctorokData,
+    OctorokState, PebbleData, RaiderSpearData, RaiderSpearState, RaiderTorchData, RaiderTorchState,
+    RockData, SkeletonData, SkeletonState, SlimeData, SlimeState, TorchFlameData, TorchProjData,
+    WardenAttack, WardenData, WardenPhase, WindCrystalData, WispData, WispState,
 };
 
 #[derive(Clone, Debug)]
@@ -464,6 +473,9 @@ impl Entity {
                 | EntityKind::RaiderTorch
                 | EntityKind::Wisp
                 | EntityKind::Skeleton
+                | EntityKind::Ironshell
+                | EntityKind::GraniteWarden
+                | EntityKind::PebbleCrawler
                 | EntityKind::Dummy
         )
     }

@@ -92,6 +92,61 @@ pub fn try_render_enemy(d: &mut Draw, e: &Entity, sprites: &SpriteMap) -> bool {
             render_tall(d, e, sprites, "skeleton", 4, "rgba(220,220,200,0.35)");
             true
         }
+        EntityKind::Ironshell => {
+            if e.body.is_none() {
+                d.circle(e.pos.x + 12.0, e.pos.y + 12.0, 10.0, "rgba(160,160,180,0.35)");
+                return true;
+            }
+            if flashing(e) {
+                return true;
+            }
+            if let Some(h) = sprites.get("ironshell") {
+                d.sprite(
+                    h,
+                    e.anim.frame.min(3) as u32,
+                    e.pos.x,
+                    e.pos.y,
+                    e.facing == Dir4::Left,
+                );
+            }
+            true
+        }
+        EntityKind::GraniteWarden => {
+            if flashing(e) {
+                return true;
+            }
+            if let Some(h) = sprites.get("granite_warden") {
+                d.sprite(
+                    h,
+                    e.anim.frame.min(3) as u32,
+                    e.pos.x,
+                    e.pos.y,
+                    false,
+                );
+            } else {
+                d.rect(e.pos.x, e.pos.y, 48.0, 48.0, "#6a6058");
+            }
+            true
+        }
+        EntityKind::WindCrystal => {
+            if let Some(h) = sprites.get("wind_crystal") {
+                d.sprite(h, e.anim.frame.min(1) as u32, e.pos.x, e.pos.y, false);
+            } else {
+                d.circle(e.pos.x + 8.0, e.pos.y + 8.0, 6.0, "#60c0ff");
+            }
+            true
+        }
+        EntityKind::PebbleCrawler => {
+            if flashing(e) {
+                return true;
+            }
+            if let Some(h) = sprites.get("pebble") {
+                d.sprite(h, e.anim.frame.min(1) as u32, e.pos.x, e.pos.y, false);
+            } else {
+                d.circle(e.pos.x + 8.0, e.pos.y + 8.0, 5.0, "#8a8070");
+            }
+            true
+        }
         EntityKind::Wisp => {
             let (telegraph, phased) = match &e.data {
                 EntityData::Wisp(d) => (

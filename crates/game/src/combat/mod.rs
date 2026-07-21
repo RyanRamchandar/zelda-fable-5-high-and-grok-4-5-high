@@ -133,7 +133,11 @@ pub fn resolve_hits(world: &mut World) {
                 | EntityKind::RaiderSpear
                 | EntityKind::RaiderTorch
                 | EntityKind::Wisp
-                | EntityKind::Skeleton
+                |                 EntityKind::Skeleton
+                | EntityKind::Ironshell
+                | EntityKind::GraniteWarden
+                | EntityKind::WindCrystal
+                | EntityKind::PebbleCrawler
                 | EntityKind::TorchProj
                 | EntityKind::TorchFlame
                 | EntityKind::Sign

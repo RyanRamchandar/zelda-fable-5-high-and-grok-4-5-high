@@ -522,3 +522,68 @@ projectile arm in `puzzle::process_hits` that does **not** set hit/despawn on ti
 **YES** — dungeon walkable with debug grants, boomerang + curriculum + keys + minimap +
 dormant Sanctum/Arena stubs. 3B can drop Ironshell / Granite Warden into reserved seams
 without map surgery.
+
+## Phase 3B completion — 2026-07-21 (Grok 4.5 High Fast worker)
+
+### Gate
+Read Phase 3A completion + frozen seams (rooms/slide API, Sanctum/Arena rects + GRP 94,
+`AttackKind::Boomerang` + `throw_id`/`stun`, flags 100–139, dungeon puzzle APIs, catalog
+≤307, Loot/StyleVerb). Honored; no room/slide/boomerang/puzzle internals rewritten.
+
+### Drift vs brief (code wins)
+- 3A placed Skeleton+RaiderSpear in GRP 94, not Ironshells — replaced with 2× `SpawnKind::Ironshell`.
+- Boss-key chest already in antechamber (3A); duo guards Sanctum → Arena BossKey door path.
+- Tunic cosmetic palette-swap deferred to Phase 5 polish (purchase + `TextId::TunicBought` shipped).
+- Credits skip = hold Attack ≥60 ticks (Phase 4 owns R-to-skip polish).
+
+### What landed (M1–M4)
+- **M1 Ironshell duo**: `enemies/ironshell.rs` + art in `content/art/boss.rs`; front armor
+  refuse (incl. frontal boom); back-hit dmg+stun+stagger; perfect-block stagger on bash;
+  bombs any-side (2 dmg, HP 8 → wasteful cheese); Sanctum shutter + `unlock_and_activate(94)`;
+  `GroupCleared` → `SANCTUM_CLEARED=145`, toast "THE CORE QUIETS", shutters open, save.
+- **M2 Arena + scaffold**: checkpoint **9** + EntryPoint antechamber; arena perch dressing;
+  `game::boss` (`mod`/`granite_warden`/`warden_crystals`/`warden_attacks`/`pebble`);
+  cinematic intro (flag `WARDEN_INTRO_SEEN=140`) + short retry; segmented boss bar;
+  core closed refuse in `apply_attack_hit` via `WardenData.core_exposed`.
+- **M3 phases**: crystal prime/`throw_id` dedupe → dual prime → GALE → core 240 ticks;
+  P1 slam+3-rock fan; P2 orbit + pebbles + sweep; P3 rim pit crumble + 5-fan + perch swap +
+  fake-core flash; `HITSTOP_BOSS_BREAK` on phase breaks; death → `boss::clear` + cp9 reset.
+- **M4 victory**: heart container (`WARDEN_HEART=142`, +2 max) → Shard dialog
+  (`SHARD_OF_COURAGE=143`) → credits stub → village fountain entry 1; `WARDEN_DEFEATED=141`
+  + `TUNIC_UNLOCKED=98`; shop tunic 300₹ once (`TUNIC_BOUGHT=144`); elder victory line;
+  re-kill skips rewards.
+
+### Flags (140–149)
+`WARDEN_INTRO_SEEN=140`, `WARDEN_DEFEATED=141`, `WARDEN_HEART=142`, `SHARD_OF_COURAGE=143`,
+`TUNIC_BOUGHT=144`, `SANCTUM_CLEARED=145`. Act 1 complete predicate for Phase 4:
+**`SHARD_OF_COURAGE` in flags**.
+
+### Tuning log
+- Ironshell HP 8 / bomb 2 → ≥4 blasts each (logged as anti-cheese).
+- Warden HP 48; phase gates 75%/35% (36 / 16.8); prime 300 / P2+ 210; core expose 240;
+  telegraphs ≥30 (slam/sweep 36). Defaults within ±0 after smoke.
+
+### Verification
+- `cargo check` + `clippy -D warnings` (wasm32) clean
+- `env -u NO_COLOR trunk build --release` ok
+- Playwright vs `python3 -m http.server 8090 --directory dist` (`/tmp/p3b_smoke/`):
+  `01_boot.png` / `02_f1h.png` / `03_walk.png` / `04_arena.png` — no console errors;
+  save v2 written; F3 Arena intact; **http.server + headless_shell killed**
+- File caps: `granite_warden` 406 (split crystals/attacks), `lib` 526, boss modules <400
+
+### Gate B
+**YES — critical path systems complete**: Ironshell duo + Granite Warden 3-phase
+crystal/gale/core fight + victory/credits/village return + tunic unlock. Automated smoke
+covers boot/F1/F3/save; full New-Game→Warden human feel pass still recommended (telegraph
+readability, fake-flash teach, death mid-P2 → cp9). Screenshots: `/tmp/p3b_smoke/01–04`.
+
+### Phase 4 inherits
+- Victory predicate: `SHARD_OF_COURAGE`
+- Credits stub (`ui/credits.rs`, Attack-hold skip)
+- Checkpoint map: 1 village, 2–4 gems, 6 shrine, 7 vestibule, 8 ante, **9 pre-boss**
+- Tunic: unlocked/bought flags; cosmetic sprite swap still open
+- Boss re-fightable (short intro; rewards once)
+
+### Ready for Fable Phase 4/5 briefs?
+**YES** — Gate B closed for Act 1 climax systems. Residual risks: human boss feel pass,
+gamepad/touch item parity still Phase 4, tunic palette cosmetic polish.

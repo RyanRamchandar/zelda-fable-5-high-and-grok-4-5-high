@@ -48,6 +48,9 @@ pub enum TextId {
     ArenaStub,
     BoomerangGet,
     DoorLocked,
+    ShardOfCourage,
+    ElderVictory,
+    TunicBought,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -248,5 +251,45 @@ pub fn text(id: TextId) -> &'static [&'static str] {
             "The wind answers in order.",
         ],
         TextId::DoorLocked => &["Locked. A key is needed."],
+        TextId::ShardOfCourage => &[
+            "The Shard of Courage!",
+            "A fragment of the Triforce stirs.",
+            "Act 1's trial is complete.",
+        ],
+        TextId::ElderVictory => &[
+            "You return with the Shard…",
+            "Courage answered. Rest, hero—",
+            "greater storms wait beyond.",
+        ],
+        TextId::TunicBought => &[
+            "The Hero's Tunic — worn with pride.",
+            "(Cosmetic; no armor change.)",
+        ],
     }
+}
+
+pub fn credits_lines() -> &'static [&'static str] {
+    &[
+        "SHARD OF THE TRIFORCE",
+        "",
+        "ACT 1 CLEAR",
+        "",
+        "Planner — Fable",
+        "Workers — Grok / Fable",
+        "Engine — handcrafted",
+        "",
+        "Mosslight Village",
+        "Whispering Grove",
+        "Ashen Raider Camp",
+        "Echoing Ruins",
+        "Razor Cliffs",
+        "Triforce Shrine",
+        "",
+        "Granite Warden — defeated",
+        "Shard of Courage — claimed",
+        "",
+        "Acts 2–3 await…",
+        "",
+        "Thank you for playing.",
+    ]
 }

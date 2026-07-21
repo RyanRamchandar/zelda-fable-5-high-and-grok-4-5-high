@@ -81,13 +81,7 @@ fn try_buy(game: &mut Game, idx: usize) -> Option<String> {
         0 => buy_bombs(game),
         1 => buy_bag(game),
         2 => buy_heart(game),
-        3 => {
-            game.world.push_event(WorldEvent::Sfx(SfxId::Refused));
-            game.world.push_event(WorldEvent::FxRequest(FxKind::Toast {
-                text: "AFTER THE SHRINE",
-            }));
-            None
-        }
+        3 => buy_tunic(game),
         _ => None,
     }
 }
@@ -186,6 +180,31 @@ fn buy_heart(game: &mut Game) -> Option<String> {
     save_from_game(game).to_json()
 }
 
+fn buy_tunic(game: &mut Game) -> Option<String> {
+    if !has_flag(&game.flags, save_flags::TUNIC_UNLOCKED) {
+        refuse(game, "AFTER THE SHRINE");
+        return None;
+    }
+    if has_flag(&game.flags, save_flags::TUNIC_BOUGHT) {
+        refuse(game, "SOLD OUT");
+        return None;
+    }
+    let price = 300u32;
+    let (rupees, _, _) = player_wallet(game);
+    if rupees < price {
+        refuse(game, "NOT ENOUGH");
+        return None;
+    }
+    with_player(game, |pd, flags| {
+        pd.rupees -= price;
+        set_flag(flags, save_flags::TUNIC_BOUGHT);
+    });
+    game.world.push_event(WorldEvent::Sfx(SfxId::BuyItem));
+    game.ui.dialog.open_text(content::text::TextId::TunicBought);
+    // Cosmetic palette swap deferred to Phase 5 polish (logged in WORKER_NOTES).
+    save_from_game(game).to_json()
+}
+
 fn refuse(game: &mut Game, toast: &'static str) {
     game.world.push_event(WorldEvent::Sfx(SfxId::Refused));
     game.world
@@ -225,11 +244,18 @@ pub fn render(d: &mut Draw, shop: &ShopState, flags: &[u16]) {
         ("Bombs x5", "10", stock_bombs(flags)),
         ("Bomb Bag", "100", stock_bag(flags)),
         ("Heart Piece", "200", stock_heart(flags)),
-        ("Hero's Tunic", "300", "After the shrine's trial."),
+        ("Hero's Tunic", "300", stock_tunic(flags)),
     ];
     for (i, (name, price, note)) in rows.iter().enumerate() {
         let y = 88.0 + i as f32 * 28.0;
-        let col = if i == shop.cursor { "#ffffff" } else { "#a0a8b8" };
+        let locked = i == 3 && !has_flag(flags, save_flags::TUNIC_UNLOCKED);
+        let col = if locked {
+            "#606870"
+        } else if i == shop.cursor {
+            "#ffffff"
+        } else {
+            "#a0a8b8"
+        };
         let mark = if i == shop.cursor { ">" } else { " " };
         d.text(&format!("{mark} {name}"), 56.0, y, col);
         d.text(&format!("{price} R"), 220.0, y, col);
@@ -261,5 +287,15 @@ fn stock_heart(flags: &[u16]) -> &'static str {
         "sold out"
     } else {
         "once"
+    }
+}
+
+fn stock_tunic(flags: &[u16]) -> &'static str {
+    if !has_flag(flags, save_flags::TUNIC_UNLOCKED) {
+        "After the shrine's trial."
+    } else if has_flag(flags, save_flags::TUNIC_BOUGHT) {
+        "sold out"
+    } else {
+        "cosmetic"
     }
 }

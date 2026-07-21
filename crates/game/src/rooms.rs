@@ -112,19 +112,33 @@ fn on_enter_room(game: &mut Game, room: u8) {
         dungeon::ROOM_TRIALS_1 => Some(content::flags::GRP_DNG_TRIALS_1),
         dungeon::ROOM_TRIALS_2 => Some(content::flags::GRP_DNG_TRIALS_2),
         dungeon::ROOM_TRIALS_3 => Some(content::flags::GRP_DNG_TRIALS_3),
+        dungeon::ROOM_SANCTUM => Some(content::flags::GRP_DNG_SANCTUM),
         _ => None,
     };
     if let Some(g) = group {
-        if !crate::world::spawner::group_cleared(&game.spawner, g) {
+        let cleared = if g == content::flags::GRP_DNG_SANCTUM {
+            crate::save_data::has_flag(&game.flags, content::flags::SANCTUM_CLEARED)
+                || crate::world::spawner::group_cleared(&game.spawner, g)
+        } else {
+            crate::world::spawner::group_cleared(&game.spawner, g)
+        };
+        if !cleared {
             close_room_shutters(game, room);
             game.world
                 .push_event(WorldEvent::Sfx(SfxId::ShutterSlam));
+            if g == content::flags::GRP_DNG_SANCTUM {
+                game.spawner
+                    .unlock_and_activate(&mut game.world, content::flags::GRP_DNG_SANCTUM);
+            }
         }
+    }
+    if room == dungeon::ROOM_ARENA {
+        crate::boss::on_enter_arena(game);
     }
     crate::puzzle::dungeon::on_room_enter(game, room);
 }
 
-fn close_room_shutters(game: &mut Game, room: u8) {
+pub(crate) fn close_room_shutters(game: &mut Game, room: u8) {
     let Some(def) = dungeon::room_by_id(room) else {
         return;
     };

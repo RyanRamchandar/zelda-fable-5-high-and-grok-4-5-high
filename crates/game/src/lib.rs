@@ -1,6 +1,7 @@
 //! Game facade: fixed 60 Hz update + render. Phase 2A overworld foundation.
 
 mod assets;
+mod boss;
 mod combat;
 mod debug;
 mod draw_enemies;
@@ -69,6 +70,7 @@ pub struct Game {
     pub(crate) puzzle: PuzzleState,
     pub(crate) rooms: Option<rooms::RoomsState>,
     pub(crate) dungeon_puzzle: Option<puzzle::dungeon::DungeonPuzzleState>,
+    pub(crate) boss: Option<boss::BossState>,
 }
 
 impl Game {
@@ -147,6 +149,7 @@ impl Game {
             puzzle: PuzzleState::for_map(map_id),
             rooms: None,
             dungeon_puzzle: None,
+            boss: None,
         };
         if map_id == MapId::Dungeon {
             rooms::on_enter_dungeon(&mut game);
@@ -210,6 +213,14 @@ impl Game {
                     self.pending_save = Some(json);
                 }
             }
+            // Victory may be waiting on dialog close.
+            let _ = boss::update(self, input);
+            return events::drain(self, input);
+        }
+
+        // Boss intro / victory / credits pause world sim.
+        if boss::update(self, input) {
+            self.ui.banner.update();
             return events::drain(self, input);
         }
 
@@ -364,6 +375,8 @@ impl Game {
 
         d.set_offset(0.0, 0.0);
         ui::render_hud(d, &self.world, &self.sprites);
+        boss::render_overlay(d, self);
+        self.ui.credits.draw(d);
         if self.current_map == MapId::Dungeon {
             ui::hud::draw_dungeon_keys(
                 d,
@@ -488,13 +501,18 @@ fn integrate_non_player(world: &mut World) {
             | EntityKind::RaiderTorch
             | EntityKind::Wisp
             | EntityKind::Skeleton
+            | EntityKind::Ironshell
+            | EntityKind::GraniteWarden
+            | EntityKind::WindCrystal
+            | EntityKind::PebbleCrawler
             | EntityKind::TorchProj
             | EntityKind::TorchFlame
             | EntityKind::Sign
             | EntityKind::Npc
             | EntityKind::Chest
             | EntityKind::Gem
-            | EntityKind::Bomb | EntityKind::Boomerang => {}
+            | EntityKind::Bomb
+            | EntityKind::Boomerang => {}
             EntityKind::Pickup
             | EntityKind::SwordBeam
             | EntityKind::DebugShot

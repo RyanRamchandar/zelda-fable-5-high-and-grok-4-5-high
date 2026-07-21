@@ -72,6 +72,20 @@ pub enum SfxId {
     TorchLight,
     TorchSnuff,
     KeyGet,
+    // Phase 3B Ironshell / Warden
+    IronshellBash,
+    IronshellCrack,
+    WardenSlam,
+    WardenSweep,
+    WardenRoar,
+    RockFan,
+    CrystalPrime,
+    GaleStagger,
+    CoreHit,
+    PhaseBreak,
+    FakeFlash,
+    WardenFall,
+    PebbleSkitter,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -162,6 +176,19 @@ pub fn spec(id: SfxId) -> SfxSpec {
         SfxId::TorchLight => saw(300.0, 480.0, 0.01, 0.1, 0.12),
         SfxId::TorchSnuff => noise(120.0, 60.0, 0.01, 0.1, 0.1, 0.6),
         SfxId::KeyGet => sine(600.0, 960.0, 0.01, 0.16, 0.14),
+        SfxId::IronshellBash => saw(140.0, 80.0, 0.01, 0.14, 0.2),
+        SfxId::IronshellCrack => noise(200.0, 80.0, 0.01, 0.12, 0.16, 0.7),
+        SfxId::WardenSlam => noise(60.0, 30.0, 0.01, 0.22, 0.24, 0.9),
+        SfxId::WardenSweep => saw(120.0, 60.0, 0.02, 0.2, 0.2),
+        SfxId::WardenRoar => saw(90.0, 40.0, 0.02, 0.28, 0.22),
+        SfxId::RockFan => square(160.0, 90.0, 0.01, 0.12, 0.14),
+        SfxId::CrystalPrime => sine(880.0, 1320.0, 0.01, 0.14, 0.14),
+        SfxId::GaleStagger => noise(180.0, 60.0, 0.02, 0.24, 0.2, 0.65),
+        SfxId::CoreHit => saw(240.0, 120.0, 0.005, 0.1, 0.18),
+        SfxId::PhaseBreak => noise(80.0, 30.0, 0.01, 0.3, 0.26, 0.95),
+        SfxId::FakeFlash => sine(440.0, 220.0, 0.01, 0.1, 0.1),
+        SfxId::WardenFall => noise(70.0, 20.0, 0.02, 0.4, 0.24, 0.9),
+        SfxId::PebbleSkitter => noise(220.0, 140.0, 0.005, 0.08, 0.1, 0.5),
     }
 }
 

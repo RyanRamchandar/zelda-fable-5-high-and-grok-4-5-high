@@ -42,6 +42,12 @@ pub fn build() -> MapDef {
         tx: 49,
         ty: 40,
     });
+    // Pre-boss checkpoint (antechamber, just south of Sanctum shutter).
+    map.entries.push(EntryPoint {
+        id: 9,
+        tx: 49,
+        ty: 20,
+    });
 
     map.triggers.push(TriggerDef {
         tx: 49,
@@ -66,6 +72,13 @@ pub fn build() -> MapDef {
         w: 4,
         h: 2,
         kind: TriggerKind::Checkpoint { id: 8 },
+    });
+    map.triggers.push(TriggerDef {
+        tx: 48,
+        ty: 18,
+        w: 4,
+        h: 2,
+        kind: TriggerKind::Checkpoint { id: 9 },
     });
 
     dress_vestibule(&mut map);
@@ -336,34 +349,25 @@ fn dress_antechamber(map: &mut MapDef) {
 
 fn dress_sanctum_arena(map: &mut MapDef) {
     map.set(49, 8, TileLayer::Ground, D_FLOOR_RUNE);
-    map.spawns.push(SpawnDef {
-        tx: 49,
-        ty: 6,
-        kind: SpawnKind::Sign {
-            text: TextId::SanctumStub,
-        },
-        group: 0,
-    });
-    // Dormant sanctum slots (group locked).
+    // Ironshell duo — group locked until Sanctum entry unlocks.
     map.spawns.push(SpawnDef {
         tx: 46,
         ty: 10,
-        kind: SpawnKind::Skeleton,
+        kind: SpawnKind::Ironshell,
         group: flags::GRP_DNG_SANCTUM,
     });
     map.spawns.push(SpawnDef {
         tx: 52,
         ty: 10,
-        kind: SpawnKind::RaiderSpear,
+        kind: SpawnKind::Ironshell,
         group: flags::GRP_DNG_SANCTUM,
     });
+    // Arena floor + crystal perches (E/W). Boss spawns at runtime.
     map.set(69, 7, TileLayer::Ground, D_FLOOR_RUNE);
-    map.spawns.push(SpawnDef {
-        tx: 69,
-        ty: 8,
-        kind: SpawnKind::Sign {
-            text: TextId::ArenaStub,
-        },
-        group: 0,
-    });
+    map.set(62, 7, TileLayer::Detail, D_CRYSTAL_BLUE);
+    map.set(76, 7, TileLayer::Detail, D_CRYSTAL_AMBER);
+    for tx in 61..79 {
+        map.set(tx, 1, TileLayer::Ground, D_WALL_TOP);
+        map.set(tx, 13, TileLayer::Ground, D_WALL_TOP);
+    }
 }

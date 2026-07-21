@@ -46,7 +46,35 @@ pub fn apply_attack_hit(
             EntityData::Skeleton(d) if d.spawn_telegraph == 0 && d.shield_up && frontal => true,
             _ => false,
         };
-        if entity.health.map(|h| h.iframes > 0).unwrap_or(true) && !hidden && !guarded {
+        let ironshell_front = match &entity.data {
+            EntityData::Ironshell(d) => {
+                if matches!(attack, AttackKind::Bomb) {
+                    false
+                } else if d.spawn_telegraph > 0 {
+                    true
+                } else if matches!(d.state, crate::world::entity::IronshellState::Stagger)
+                    || d.stun_ticks > 0
+                {
+                    false
+                } else {
+                    crate::enemies::ironshell::is_frontal_hit(entity.facing, dir)
+                }
+            }
+            _ => false,
+        };
+        let warden_closed = match &entity.data {
+            EntityData::GraniteWarden(d) => d.core_exposed == 0,
+            _ => false,
+        };
+        if matches!(entity.kind, EntityKind::WindCrystal) {
+            return;
+        }
+        if entity.health.map(|h| h.iframes > 0).unwrap_or(true)
+            && !hidden
+            && !guarded
+            && !ironshell_front
+            && !warden_closed
+        {
             return;
         }
         if (hidden || guarded) && attack != AttackKind::Boomerang {
@@ -55,6 +83,8 @@ pub fn apply_attack_hit(
             } else {
                 SfxId::Refused
             })
+        } else if ironshell_front || warden_closed {
+            Some(SfxId::GuardClank)
         } else {
             None
         }
@@ -64,11 +94,30 @@ pub fn apply_attack_hit(
             if let Some(h) = e.health.as_mut() {
                 h.flash = tuning::FLASH_TICKS;
             }
+            // Light self-knock for frontal refuse rhythm.
+            if e.kind == EntityKind::Ironshell {
+                e.knockback = dir.normalize_or_zero().scale(0.6);
+            }
         }
         world.push_event(WorldEvent::FxRequest(FxKind::BlockSpark { pos }));
         world.push_event(WorldEvent::Sfx(sfx));
         return;
     }
+
+    // Warden damage goes through boss HP tracker (entity health mirrors).
+    let is_warden = matches!(
+        world.get(target).map(|e| e.kind),
+        Some(EntityKind::GraniteWarden)
+    );
+    let dmg = if is_warden {
+        if attack == AttackKind::Boomerang {
+            0.5
+        } else {
+            tuning::WARDEN_CORE_HIT.min(damage.max(tuning::WARDEN_CORE_HIT * 0.5))
+        }
+    } else {
+        damage
+    };
 
     let (killed, kind, death_pos, heavy, is_dummy) = {
         let Some(entity) = world.get_mut(target) else {
@@ -77,10 +126,16 @@ pub fn apply_attack_hit(
         let Some(h) = entity.health.as_mut() else {
             return;
         };
-        h.hp = (h.hp as f32 - damage).ceil().max(0.0) as i32;
+        h.hp = (h.hp as f32 - dmg).ceil().max(0.0) as i32;
         h.flash = tuning::FLASH_TICKS;
         h.iframes = tuning::ENEMY_IFRAMES;
-        entity.knockback = dir.normalize_or_zero().scale(knockback);
+        // Warden / ironshell: no / soft knockback.
+        if entity.kind != EntityKind::GraniteWarden {
+            entity.knockback = dir.normalize_or_zero().scale(knockback);
+        }
+        if let EntityData::GraniteWarden(wd) = &mut entity.data {
+            wd.hp = (wd.hp - dmg).max(0.0);
+        }
         let killed = h.hp <= 0;
         let kind = entity.kind;
         let death_pos = entity.center();
@@ -89,14 +144,28 @@ pub fn apply_attack_hit(
         (killed, kind, death_pos, heavy, is_dummy)
     };
 
+    if is_warden {
+        world.push_event(WorldEvent::Sfx(SfxId::CoreHit));
+        crate::boss::on_warden_damaged(world, target);
+    }
+
     if attack == AttackKind::Boomerang {
-        crate::enemies::stun(world, target, 60);
-        world.push_event(WorldEvent::StyleAction(StyleVerb::BoomerangStun));
-        if matches!(
-            world.get(target).map(|e| e.kind),
-            Some(EntityKind::Skeleton)
+        let kind_now = world.get(target).map(|e| e.kind);
+        if matches!(kind_now, Some(EntityKind::Ironshell)) {
+            // Back-hit: damage already applied; stun + open shell.
+            crate::enemies::stun(world, target, 60);
+            crate::enemies::ironshell::stagger(world, target);
+            world.push_event(WorldEvent::StyleAction(StyleVerb::BoomerangStun));
+            world.push_event(WorldEvent::Sfx(SfxId::IronshellCrack));
+        } else if !matches!(
+            kind_now,
+            Some(EntityKind::GraniteWarden | EntityKind::WindCrystal)
         ) {
-            crate::enemies::skeleton::stagger(world, target);
+            crate::enemies::stun(world, target, 60);
+            world.push_event(WorldEvent::StyleAction(StyleVerb::BoomerangStun));
+            if matches!(kind_now, Some(EntityKind::Skeleton)) {
+                crate::enemies::skeleton::stagger(world, target);
+            }
         }
     }
     world.hitstop = if heavy {
@@ -207,11 +276,14 @@ pub fn apply_player_damage(
             world.push_event(WorldEvent::Sfx(SfxId::PerfectBlock));
             reflect_projectiles_near(world, center);
             if let Some(src) = source {
-                if matches!(
-                    world.get(src).map(|e| e.kind),
-                    Some(EntityKind::Skeleton)
-                ) {
-                    crate::enemies::skeleton::try_perfect_block_stagger(world, src);
+                match world.get(src).map(|e| e.kind) {
+                    Some(EntityKind::Skeleton) => {
+                        crate::enemies::skeleton::try_perfect_block_stagger(world, src);
+                    }
+                    Some(EntityKind::Ironshell) => {
+                        crate::enemies::ironshell::try_perfect_block_stagger(world, src);
+                    }
+                    _ => {}
                 }
             }
         } else {
@@ -295,13 +367,18 @@ fn reflect_projectiles_near(world: &mut World, center: Vec2) {
             | EntityKind::RaiderTorch
             | EntityKind::Wisp
             | EntityKind::Skeleton
+            | EntityKind::Ironshell
+            | EntityKind::GraniteWarden
+            | EntityKind::WindCrystal
+            | EntityKind::PebbleCrawler
             | EntityKind::TorchProj
             | EntityKind::TorchFlame
             | EntityKind::Sign
             | EntityKind::Npc
             | EntityKind::Chest
             | EntityKind::Gem
-            | EntityKind::Bomb | EntityKind::Boomerang => {}
+            | EntityKind::Bomb
+            | EntityKind::Boomerang => {}
         }
     }
 }

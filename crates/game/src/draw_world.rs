@@ -408,6 +408,10 @@ pub fn render_entity(d: &mut Draw, e: &Entity, sprites: &SpriteMap) {
         | EntityKind::RaiderTorch
         | EntityKind::Wisp
         | EntityKind::Skeleton
+        | EntityKind::Ironshell
+        | EntityKind::GraniteWarden
+        | EntityKind::WindCrystal
+        | EntityKind::PebbleCrawler
         | EntityKind::TorchProj
         | EntityKind::TorchFlame => {}
     }

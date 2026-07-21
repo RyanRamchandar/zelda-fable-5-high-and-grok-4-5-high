@@ -3,7 +3,7 @@
 use content::flags::{self, CAMP_WAVE_CHAIN};
 use content::maps::{SpawnDef, SpawnKind, TILE_PX};
 
-use crate::enemies::{bat, octorok, raider, skeleton, slime, wisp};
+use crate::enemies::{bat, ironshell, octorok, raider, skeleton, slime, wisp};
 use crate::math::Vec2;
 use crate::save_data::has_flag;
 use crate::world::entity::Entity;
@@ -49,8 +49,10 @@ impl Spawner {
                 locked_groups.push(next);
             }
         }
-        // Phase 3A: sanctum miniboss reserved for 3B.
-        locked_groups.push(flags::GRP_DNG_SANCTUM);
+        // Sanctum duo locked until room entry unlocks (or cleared).
+        if !has_flag(save_flags, flags::SANCTUM_CLEARED) {
+            locked_groups.push(flags::GRP_DNG_SANCTUM);
+        }
 
         let mut slots = Vec::new();
         for def in world.map.spawns.clone() {
@@ -320,6 +322,7 @@ fn is_hostile_kind(kind: SpawnKind) -> bool {
             | SpawnKind::RaiderTorch
             | SpawnKind::Wisp
             | SpawnKind::Skeleton
+            | SpawnKind::Ironshell
             | SpawnKind::Dummy
     )
 }
@@ -344,6 +347,7 @@ fn spawn_kind(world: &mut World, kind: SpawnKind, pos: Vec2) -> EntityId {
         SpawnKind::RaiderTorch => raider::spawn_torch(world, pos),
         SpawnKind::Wisp => wisp::spawn(world, pos),
         SpawnKind::Skeleton => skeleton::spawn(world, pos),
+        SpawnKind::Ironshell => ironshell::spawn(world, pos),
         SpawnKind::FairyFountain => world.spawn(Entity::fountain(pos)),
         SpawnKind::Dummy => world.spawn(Entity::dummy(pos)),
         SpawnKind::Sign { text } => world.spawn(Entity::sign(pos, text)),

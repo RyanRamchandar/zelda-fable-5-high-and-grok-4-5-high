@@ -93,6 +93,7 @@ pub enum SpawnKind {
     RaiderTorch,
     Wisp,
     Skeleton,
+    Ironshell,
     FairyFountain,
     Dummy,
     Sign { text: crate::text::TextId },

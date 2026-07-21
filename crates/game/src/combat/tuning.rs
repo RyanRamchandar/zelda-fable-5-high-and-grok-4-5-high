@@ -52,7 +52,6 @@ pub const KB_FINISHER: f32 = 3.2;
 pub const KB_SPIN: f32 = 4.0;
 pub const HITSTOP_NORMAL: u8 = 3;
 pub const HITSTOP_HEAVY: u8 = 5;
-#[allow(dead_code)] // reserved for boss phase breaks
 pub const HITSTOP_BOSS_BREAK: u8 = 12;
 pub const FLASH_TICKS: u8 = 4;
 pub const PLAYER_IFRAMES: u16 = 60;
@@ -174,3 +173,34 @@ pub const SKELETON_POKE_TELE: u16 = 20;
 pub const SKELETON_LUNGE: u16 = 10;
 pub const SKELETON_POKE_STAGGER: u16 = 40;
 pub const SKELETON_PERFECT_STAGGER: u16 = 60;
+
+// --- Ironshell duo (Phase 3B) ---
+// HP 8 each: bomb (2 dmg) needs 4 blasts/shell = wasteful vs boomerang-behind.
+pub const IRONSHELL_HP: i32 = 8;
+pub const IRONSHELL_CONTACT: i32 = 1;
+pub const IRONSHELL_BASH: i32 = 2;
+pub const IRONSHELL_WALK: f32 = 0.4;
+pub const IRONSHELL_BASH_RANGE: f32 = 36.0;
+pub const IRONSHELL_BASH_TELE: u16 = 30;
+pub const IRONSHELL_BASH_TICKS: u16 = 10;
+pub const IRONSHELL_BASH_SPEED: f32 = 2.4;
+pub const IRONSHELL_RECOVER: u16 = 28;
+pub const IRONSHELL_STAGGER: u16 = 75;
+
+// --- Granite Warden ---
+pub const WARDEN_HP: f32 = 48.0;
+pub const WARDEN_PHASE2_HP: f32 = 36.0; // 75%
+pub const WARDEN_PHASE3_HP: f32 = 16.8; // 35%
+pub const WARDEN_SLAM_TELE: u16 = 36;
+pub const WARDEN_SLAM_DAMAGE: i32 = 2;
+pub const WARDEN_ROCK_DAMAGE: f32 = 1.0;
+pub const WARDEN_SWEEP_TELE: u16 = 36;
+pub const WARDEN_SWEEP_DAMAGE: i32 = 2;
+pub const WARDEN_PRIME_WINDOW: u16 = 300;
+pub const WARDEN_PRIME_WINDOW_P2: u16 = 210;
+pub const WARDEN_CORE_EXPOSE: u16 = 240;
+pub const WARDEN_CORE_HIT: f32 = 5.0;
+pub const PEBBLE_HP: i32 = 2;
+pub const PEBBLE_CONTACT: i32 = 1;
+pub const PEBBLE_CHASE: f32 = 0.85;
+pub const PEBBLE_LUNGE: f32 = 3.2;

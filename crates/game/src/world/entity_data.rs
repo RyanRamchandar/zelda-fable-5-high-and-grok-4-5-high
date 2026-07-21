@@ -161,3 +161,67 @@ pub struct BoomerangData {
     pub flame: bool,
     pub catch_buffer: bool,
 }
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum IronshellState {
+    Advance,
+    BashTelegraph,
+    Bash,
+    Recover,
+    Stagger,
+}
+
+#[derive(Clone, Debug)]
+pub struct IronshellData {
+    pub spawn_telegraph: u16,
+    pub state: IronshellState,
+    pub timer: u16,
+    pub stun_ticks: u16,
+    pub stagger_len: u16,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum WardenPhase {
+    One,
+    Two,
+    Three,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum WardenAttack {
+    Idle,
+    SlamTele,
+    Slam,
+    RockFanTele,
+    RockFan,
+    SweepTele,
+    Sweep,
+    FakeFlash,
+    Collapse,
+}
+
+#[derive(Clone, Debug)]
+pub struct WardenData {
+    pub phase: WardenPhase,
+    pub attack: WardenAttack,
+    pub timer: u16,
+    pub core_exposed: u16,
+    pub hp: f32,
+    pub max_hp: f32,
+    pub fake_armed: bool,
+}
+
+#[derive(Clone, Debug)]
+pub struct WindCrystalData {
+    pub perch: u8,
+    pub primed: u16,
+    pub throw_id_seen: u32,
+    pub orbit_angle: f32,
+}
+
+#[derive(Clone, Debug)]
+pub struct PebbleData {
+    pub spawn_telegraph: u16,
+    pub state: SlimeState,
+    pub timer: u16,
+}

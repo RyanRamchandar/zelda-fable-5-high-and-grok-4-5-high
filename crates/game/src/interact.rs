@@ -143,6 +143,10 @@ fn interact_entity(game: &mut Game, id: crate::world::EntityId) -> Option<String
                     return None;
                 }
                 let text = if n.npc == content::text::NpcId::Elder
+                    && has_flag(&game.flags, save_flags::SHARD_OF_COURAGE)
+                {
+                    TextId::ElderVictory
+                } else if n.npc == content::text::NpcId::Elder
                     && has_flag(&game.flags, save_flags::QUEST_STARTED)
                 {
                     TextId::ElderReminder

@@ -325,13 +325,18 @@ pub fn update_beams(world: &mut World) {
                 | EntityKind::RaiderTorch
                 | EntityKind::Wisp
                 | EntityKind::Skeleton
+                | EntityKind::Ironshell
+                | EntityKind::GraniteWarden
+                | EntityKind::WindCrystal
+                | EntityKind::PebbleCrawler
                 | EntityKind::TorchProj
                 | EntityKind::TorchFlame
                 | EntityKind::Sign
                 | EntityKind::Npc
                 | EntityKind::Chest
                 | EntityKind::Gem
-                | EntityKind::Bomb | EntityKind::Boomerang => continue,
+                | EntityKind::Bomb
+                | EntityKind::Boomerang => continue,
             }
             let EntityData::Beam(b) = &mut e.data else {
                 continue;

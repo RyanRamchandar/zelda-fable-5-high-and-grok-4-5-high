@@ -93,8 +93,16 @@ pub const GRP_DNG_TRIALS_1: u16 = 90;
 pub const GRP_DNG_TRIALS_2: u16 = 91;
 pub const GRP_DNG_TRIALS_3: u16 = 92;
 pub const GRP_DNG_CURRENTS: u16 = 93;
-/// Sanctum miniboss — reserved/locked until Phase 3B.
+/// Sanctum miniboss — unlocked on Sanctum Core entry (Phase 3B).
 pub const GRP_DNG_SANCTUM: u16 = 94;
+
+/// Phase 3B boss / victory (140–149).
+pub const WARDEN_INTRO_SEEN: u16 = 140;
+pub const WARDEN_DEFEATED: u16 = 141;
+pub const WARDEN_HEART: u16 = 142;
+pub const SHARD_OF_COURAGE: u16 = 143;
+pub const TUNIC_BOUGHT: u16 = 144;
+pub const SANCTUM_CLEARED: u16 = 145;
 
 pub fn droom_flag(room_id: u8) -> u16 {
     DROOM_0 + room_id as u16

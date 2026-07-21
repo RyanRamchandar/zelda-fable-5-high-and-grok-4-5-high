@@ -1,7 +1,8 @@
-//! Enemy AI: slime / bat / octorok / raiders / wisp / skeleton + arena waves.
+//! Enemy AI: slime / bat / octorok / raiders / wisp / skeleton / ironshell + arena waves.
 
-mod ai;
+pub(crate) mod ai;
 pub(crate) mod bat;
+pub(crate) mod ironshell;
 pub(crate) mod octorok;
 pub(crate) mod raider;
 pub(crate) mod skeleton;
@@ -38,8 +39,10 @@ pub fn stun(world: &mut World, id: EntityId, ticks: u16) {
         EntityData::RaiderSpear(d) => d.stun_ticks = ticks,
         EntityData::RaiderTorch(d) => d.stun_ticks = ticks,
         EntityData::Wisp(d) => d.stun_ticks = ticks,
-        EntityData::Skeleton(_) => {
-            // Prefer stagger hook.
+        EntityData::Ironshell(d) => d.stun_ticks = ticks,
+        EntityData::PebbleCrawler(_) => {}
+        EntityData::Skeleton(_) | EntityData::GraniteWarden(_) | EntityData::WindCrystal(_) => {
+            // Prefer stagger / boss hooks.
         }
         _ => {}
     }
@@ -72,6 +75,8 @@ fn update_enemies(world: &mut World, _input: &InputState) {
                 | EntityKind::RaiderTorch
                 | EntityKind::Wisp
                 | EntityKind::Skeleton
+                | EntityKind::Ironshell
+                | EntityKind::PebbleCrawler
         ) && crate::world::spawner::enemy_should_sleep(world, pos)
         {
             continue;
@@ -84,6 +89,8 @@ fn update_enemies(world: &mut World, _input: &InputState) {
             EntityKind::RaiderTorch => raider::update_torch(world, id),
             EntityKind::Wisp => wisp::update_one(world, id),
             EntityKind::Skeleton => skeleton::update_one(world, id),
+            EntityKind::Ironshell => ironshell::update_one(world, id),
+            EntityKind::PebbleCrawler => crate::boss::pebble::update_one(world, id),
             EntityKind::OctorokRock
             | EntityKind::TorchProj
             | EntityKind::TorchFlame
@@ -96,9 +103,11 @@ fn update_enemies(world: &mut World, _input: &InputState) {
             | EntityKind::Sign
             | EntityKind::Npc
             | EntityKind::Chest
-            |             EntityKind::Gem
+            | EntityKind::Gem
             | EntityKind::Bomb
-            | EntityKind::Boomerang => {}
+            | EntityKind::Boomerang
+            | EntityKind::GraniteWarden
+            | EntityKind::WindCrystal => {}
         }
     }
     octorok::update_rocks(world);
