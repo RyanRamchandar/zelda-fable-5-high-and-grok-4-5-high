@@ -245,7 +245,11 @@ fn reflect_projectiles_near(world: &mut World, center: Vec2) {
             | EntityKind::FairyFountain
             | EntityKind::Slime
             | EntityKind::Bat
-            | EntityKind::Octorok => {}
+            | EntityKind::Octorok
+            | EntityKind::Sign
+            | EntityKind::Npc
+            | EntityKind::Chest
+            | EntityKind::Gem => {}
         }
     }
 }

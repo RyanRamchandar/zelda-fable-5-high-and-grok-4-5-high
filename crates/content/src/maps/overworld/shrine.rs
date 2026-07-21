@@ -1,13 +1,14 @@
-//! Triforce Shrine shell (96..144, 4..32).
+//! Triforce Shrine — pedestals, braziers, soft seal gate.
 
+use crate::flags;
 use crate::maps::catalog::*;
 use crate::maps::paint::{path, stamp};
 use crate::maps::{
     EntryPoint, MapDef, RegionDef, SpawnDef, SpawnKind, TileLayer, TriggerDef, TriggerKind,
 };
+use crate::text::TextId;
 
 pub fn paint(map: &mut MapDef) {
-    // Stone approach + vista terrace.
     for y in 4..32 {
         for x in 96..144 {
             map.set(x, y, TileLayer::Ground, T_SAND);
@@ -16,7 +17,6 @@ pub fn paint(map: &mut MapDef) {
     map.fill_rect_layer(104, 8, 136, 28, TileLayer::Ground, T_PATH);
     path(map, &[(120, 30), (120, 20), (120, 12)], 3, T_PATH);
 
-    // Shrine facade.
     let facade = [
         "SSSSSSS",
         "S.....S",
@@ -30,11 +30,34 @@ pub fn paint(map: &mut MapDef) {
     ];
     stamp(map, 117, 8, &facade, &legend);
 
-    // Approach pillars.
+    // Pedestal trio + braziers.
+    map.set(114, 14, TileLayer::Ground, T_PEDESTAL);
+    map.set(120, 14, TileLayer::Ground, T_PEDESTAL);
+    map.set(126, 14, TileLayer::Ground, T_PEDESTAL);
+    map.set(112, 14, TileLayer::Ground, T_BRAZIER);
+    map.set(128, 14, TileLayer::Ground, T_BRAZIER);
+
     map.set(110, 18, TileLayer::Ground, T_COLUMN);
     map.set(130, 18, TileLayer::Ground, T_COLUMN);
     map.set(110, 18, TileLayer::Overhang, T_ARCH_TOP);
     map.set(130, 18, TileLayer::Overhang, T_ARCH_TOP);
+
+    map.spawns.push(SpawnDef {
+        tx: 120,
+        ty: 16,
+        kind: SpawnKind::Sign {
+            text: TextId::ShrineLore,
+        },
+        group: 0,
+    });
+    map.spawns.push(SpawnDef {
+        tx: 122,
+        ty: 18,
+        kind: SpawnKind::Sign {
+            text: TextId::TwinFlames,
+        },
+        group: 0,
+    });
 
     map.regions.push(RegionDef {
         name: "Triforce Shrine",
@@ -61,19 +84,20 @@ pub fn paint(map: &mut MapDef) {
         ty: 22,
     });
 
+    // Soft-gate sentinels framing the road (groups away from CP).
     for (tx, ty, kind) in [
-        (108u32, 24, SpawnKind::Bat),
-        (132, 24, SpawnKind::Bat),
-        (115, 16, SpawnKind::Octorok),
-        (125, 16, SpawnKind::Slime),
-        (105, 12, SpawnKind::Bat),
-        (135, 14, SpawnKind::Octorok),
+        (108u32, 28, SpawnKind::Octorok),
+        (106, 26, SpawnKind::Slime),
+        (110, 30, SpawnKind::Bat),
+        (132, 28, SpawnKind::Octorok),
+        (134, 26, SpawnKind::Slime),
+        (130, 30, SpawnKind::Bat),
     ] {
         map.spawns.push(SpawnDef {
             tx,
             ty,
             kind,
-            group: 70,
+            group: flags::GRP_SHRINE,
         });
     }
 }

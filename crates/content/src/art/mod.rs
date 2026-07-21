@@ -1,9 +1,13 @@
 //! Indexed-color sprite/tile grids → baked by `game::assets` into `engine::atlas`.
 
 pub mod enemies;
+pub mod npcs;
 pub mod palette;
 pub mod player_actions;
 pub mod player_base;
+pub mod props_interior;
+pub mod props_village;
+pub mod props_wild;
 pub mod tiles;
 pub mod tiles_forest;
 pub mod tiles_terrain;
@@ -138,6 +142,42 @@ pub fn all_bakes() -> Vec<SpriteBake> {
         bake(&tiles_forest::TILE_ARCH_TOP),
         bake(&tiles_forest::TILE_INT_FLOOR),
         bake(&tiles_forest::TILE_INT_WALL),
+        // Phase 2B props + NPCs + POIs
+        bake(&props_village::PROP_LANTERN),
+        bake(&props_village::PROP_FLOWER_BED),
+        bake(&props_village::PROP_STALL),
+        bake(&props_village::PROP_BASIN),
+        bake(&props_village::PROP_SIGN),
+        bake(&props_village::PROP_CHEST),
+        bake(&props_village::PROP_GEM),
+        bake(&props_village::PROP_PEDESTAL),
+        bake(&props_village::POI_SHOP),
+        bake(&props_village::POI_FOUNTAIN),
+        bake(&props_village::POI_SHRINE),
+        bake(&props_village::POI_GEM),
+        bake(&props_village::POI_CHECK),
+        bake(&props_village::POI_STAR),
+        bake(&props_village::POI_SECRET),
+        bake(&props_wild::PROP_TENT),
+        bake(&props_wild::PROP_BONFIRE),
+        bake(&props_wild::PROP_CRACKED),
+        bake(&props_wild::PROP_CHIME),
+        bake(&props_wild::PROP_BIRDS),
+        bake(&props_wild::PROP_RUBBLE),
+        bake(&props_wild::PROP_BRAZIER),
+        bake(&props_wild::PROP_PALE_TREE),
+        bake(&props_interior::PROP_RUG),
+        bake(&props_interior::PROP_TABLE),
+        bake(&props_interior::PROP_BED),
+        bake(&props_interior::PROP_SHELF),
+        bake(&props_interior::PROP_COUNTER),
+        bake(&props_interior::PROP_POT),
+        bake(&npcs::NPC_ELDER),
+        bake(&npcs::NPC_SHOP),
+        bake(&npcs::NPC_VILLAGER_A),
+        bake(&npcs::NPC_VILLAGER_B),
+        bake(&npcs::NPC_VILLAGER_C),
+        bake(&npcs::NPC_KID),
         // UI
         bake(&ui::UI_HEART_FULL),
         bake(&ui::UI_HEART_HALF),

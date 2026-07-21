@@ -34,6 +34,11 @@ pub enum SfxId {
     ReflectZing,
     LedgeHop,
     CheckpointChime,
+    TextBlip,
+    ChestOpen,
+    GemGet,
+    SealOpen,
+    SecretChime,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -89,6 +94,11 @@ pub fn spec(id: SfxId) -> SfxSpec {
         SfxId::ReflectZing => sine(880.0, 1320.0, 0.005, 0.09, 0.14),
         SfxId::LedgeHop => noise(180.0, 90.0, 0.005, 0.1, 0.12, 0.55),
         SfxId::CheckpointChime => sine(660.0, 990.0, 0.02, 0.18, 0.1),
+        SfxId::TextBlip => square(880.0, 920.0, 0.001, 0.03, 0.06),
+        SfxId::ChestOpen => saw(240.0, 480.0, 0.01, 0.14, 0.16),
+        SfxId::GemGet => sine(440.0, 1320.0, 0.02, 0.28, 0.18),
+        SfxId::SealOpen => saw(160.0, 520.0, 0.02, 0.32, 0.2),
+        SfxId::SecretChime => sine(740.0, 1180.0, 0.015, 0.22, 0.14),
     }
 }
 

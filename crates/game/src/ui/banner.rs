@@ -1,4 +1,4 @@
-//! Region name banners (minimal — 2B skins).
+//! Region name banners (panel-skinned).
 
 use engine::render::Draw;
 
@@ -58,14 +58,11 @@ impl BannerState {
         } else {
             1.0 - (b.tick - FADE_IN - HOLD) as f32 / FADE_OUT as f32
         };
-        let a = (alpha * 180.0) as u8;
-        let under = format!("rgba(0,0,0,{:.2})", alpha * 0.55);
-        let text = format!("rgba(240,240,220,{:.2})", alpha);
-        let _ = a;
-        let w = (b.name.len() as f32) * 6.5 + 16.0;
+        let w = (b.name.len() as f32) * 6.5 + 24.0;
         let x = (480.0 - w) * 0.5;
-        d.rect(x, 18.0, w, 16.0, &under);
-        d.text(b.name, x + 8.0, 30.0, &text);
+        d.rect(x, 14.0, w, 22.0, &format!("rgba(32,40,48,{:.2})", alpha * 0.85));
+        d.rect(x, 14.0, w, 2.0, &format!("rgba(96,128,160,{:.2})", alpha));
+        d.text(b.name, x + 12.0, 30.0, &format!("rgba(240,240,220,{:.2})", alpha));
     }
 }
 

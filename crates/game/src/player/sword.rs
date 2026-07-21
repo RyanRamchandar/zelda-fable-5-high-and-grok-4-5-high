@@ -320,7 +320,11 @@ pub fn update_beams(world: &mut World) {
                 | EntityKind::Slime
                 | EntityKind::Bat
                 | EntityKind::Octorok
-                | EntityKind::OctorokRock => continue,
+                | EntityKind::OctorokRock
+                | EntityKind::Sign
+                | EntityKind::Npc
+                | EntityKind::Chest
+                | EntityKind::Gem => continue,
             }
             let EntityData::Beam(b) = &mut e.data else {
                 continue;

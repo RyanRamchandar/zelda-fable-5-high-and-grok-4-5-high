@@ -56,6 +56,7 @@ pub enum WorldEvent {
     StyleAction(StyleVerb),
     EnergyDenied,
     RegionEntered(u8),
+    GroupCleared(u16),
 }
 
 #[derive(Clone, Copy, Debug)]

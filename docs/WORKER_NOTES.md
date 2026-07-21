@@ -235,3 +235,67 @@ All 1A frozen seams honored. Additive only: `EntityKind::{Slime,Bat,Octorok,Octo
 ### Gate readiness for 2B
 **YES** — seams frozen above. Residual: human full-map ledge/bridge feel
 pass, gamepad still untested, art is readable shell quality not final polish.
+
+## Phase 2B completion — 2026-07-21 (Grok 4.5 High Fast worker)
+
+### What landed
+- **M1 Interact**: `content::text` + `flags` registries; `SpawnKind::{Sign,Npc,Chest,Gem}`
+  + `EntityKind` twins; `game::interact` + `ui::dialog` (typewriter + TextBlip);
+  chests (Loot::Rupees/HeartPiece/Gem) persist via flags; rupee HUD retained.
+- **M2 Decoration**: props_village/wild/interior + npcs art; catalog ids 240–259;
+  all six regions dressed; houses/shop/caves furnished; `MapId::ShrineLobby`.
+- **M3 Encounters**: authored slime/bat/octorok placements; camp guard `group=41`
+  + `group_cleared` / `WorldEvent::GroupCleared`; village/CP/door safe (no hostiles
+  in village shell).
+- **M4 Gems + seal**: Courage pedestal (grove), Power chest (camp, group-gated),
+  Wisdom pedestal (ruins); gem hold-up + GemGet + checkpoint; shrine interact
+  seal → set_tile open + ShrineLobby stub; `DOOR_SHRINE_OPEN` restore on load.
+- **M5 Minimap**: 60×60 fog bitset in SaveGame v2 (`fog: Vec<u32>`, 113 words);
+  corner map (M toggle) + pause map (Esc/Enter); POI icons + objective marker.
+- **M6 Secrets**: 10 telegraphed secrets/flags (bomb-wall inert stub, cliffs cave
+  heart #1, ruins cellar heart #2, river island, shop hedge, pale-tree heart #3,
+  camp tower, summit vista, meadow flower ring, shrine braziers); SecretChime;
+  4-piece → max-heart helper; banner panel skin.
+
+### Flag registry
+`content::flags` (re-exported as `game::save_data::save_flags`): QUEST_STARTED,
+CHEST_*, SECRET_*, DOOR_SHRINE_OPEN, HEART_PIECE_1..4, HEART_REWARD_APPLIED,
+GEM_*, GROUP_CAMP_GUARD, GRP_* encounter groups.
+
+### Screenshots (Playwright `/tmp/p2b_smoke/`)
+- `01_village.png` / `02_f1.png` — overworld props, sign, chest, NPCs, corner
+  minimap, `fps~60`, `chunks: 18–36/48 bake0`
+- `06_arena.png` — F3 Arena still waves/dummies (combat intact)
+- Fog words non-zero in localStorage after walk; version:2 save roundtrip
+
+### Deviations / tuning
+- Engine: KeyM → `InputState.minimap_toggle` (brief required M; logged).
+- Multi-frame prop/NPC grids authored as horizontal strips (atlas contract).
+- `game/src/lib.rs` ~601 lines (at ~600 cap).
+- Pause-map Esc/Enter wired in code; automated screenshot evidence weak (prefer
+  human glance). Interact range loosened to 28 px for feel.
+- Ambient leaf/ember particles not shipped (residual polish).
+- NPC art is readable stub quality, not final Minish Cap polish.
+
+### Stubbed for Phase 2C / 3
+- Grove chime puzzle (stands + sign present, inert)
+- Ruins plate court (detail rubble plates, inert)
+- Camp barricade destructibility
+- Shop economy UI (shopkeeper “stock arrives soon”)
+- Bomb-wall open (hollow interact only; flag reserved)
+- Broken-bridge crank / full river path tooling
+- Heart piece #4 from shop
+- New enemy families (wisp/skeleton/raiders)
+- Real dungeon beyond ShrineLobby sign
+
+### Verification
+- `cargo check` + `clippy -D warnings` (wasm32) clean
+- `env -u NO_COLOR trunk build --release` → dist ok
+- Playwright vs `python3 -m http.server 8090 --directory dist`: boot OW, F1
+  ~60 fps, fog in save, F3 Arena; **processes cleaned** (http.server +
+  headless_shell killed)
+
+### Gate readiness for 2C / Phase 3 brief?
+**YES** — soft critical path + content fill seams are in; 2C can swap puzzle
+mechanics onto placed props/flags without map surgery. Recommend human play
+of elder→3 gems→seal before 2C polish pass.

@@ -1,13 +1,14 @@
-//! Echoing Ruins shell (156..232, 110..184).
+//! Echoing Ruins — columns, Wisdom Gem, octorok lanes.
 
+use crate::flags;
 use crate::maps::catalog::*;
 use crate::maps::paint::{path, stamp};
 use crate::maps::{
-    EntryPoint, MapDef, RegionDef, SpawnDef, SpawnKind, TileLayer, TriggerDef, TriggerKind,
+    EntryPoint, Loot, MapDef, RegionDef, SpawnDef, SpawnKind, TileLayer, TriggerDef, TriggerKind,
 };
+use crate::text::TextId;
 
 pub fn paint(map: &mut MapDef) {
-    // Sand / cracked stone ground.
     for y in 110..184 {
         for x in 156..232 {
             let tile = if (x + y) % 3 == 0 { T_SAND } else { T_DIRT };
@@ -15,7 +16,6 @@ pub fn paint(map: &mut MapDef) {
         }
     }
 
-    // Broken column grid.
     for gy in 0..5 {
         for gx in 0..6 {
             let x = 164 + gx * 10;
@@ -26,7 +26,6 @@ pub fn paint(map: &mut MapDef) {
         }
     }
 
-    // Collapsed arch prefabs (overhang tops).
     let arch = ["C.C", ".A.", "..."];
     let legend = [
         ('C', TileLayer::Ground, T_COLUMN),
@@ -36,8 +35,42 @@ pub fn paint(map: &mut MapDef) {
     stamp(map, 200, 150, &arch, &legend);
     stamp(map, 170, 160, &arch, &legend);
 
-    // Plaza reserved for plate court (2B).
+    // Plate court + Wisdom Gem.
     map.fill_rect_layer(186, 140, 210, 160, TileLayer::Ground, T_SAND);
+    for x in (188..208).step_by(4) {
+        for y in (142..158).step_by(4) {
+            map.set(x, y, TileLayer::Detail, T_RUBBLE); // inert plates
+        }
+    }
+    map.set(198, 150, TileLayer::Ground, T_PEDESTAL);
+    map.spawns.push(SpawnDef {
+        tx: 198,
+        ty: 150,
+        kind: SpawnKind::Gem { id: 2 },
+        group: 0,
+    });
+    map.spawns.push(SpawnDef {
+        tx: 192,
+        ty: 146,
+        kind: SpawnKind::Sign {
+            text: TextId::RuinsTablet,
+        },
+        group: 0,
+    });
+
+    // Collapsed cellar secret — walk behind rubble.
+    map.set(168, 168, TileLayer::Detail, T_RUBBLE);
+    map.set(169, 168, TileLayer::Ground, T_PATH);
+    map.set_flags(168, 168, 0);
+    map.spawns.push(SpawnDef {
+        tx: 167,
+        ty: 169,
+        kind: SpawnKind::Chest {
+            flag: flags::CHEST_RUINS_CELLAR,
+            loot: Loot::HeartPiece,
+        },
+        group: 0,
+    });
 
     path(map, &[(178, 148), (190, 150), (200, 145), (210, 140)], 2, T_PATH);
     path(map, &[(190, 180), (190, 160), (190, 150)], 2, T_PATH);
@@ -67,21 +100,26 @@ pub fn paint(map: &mut MapDef) {
         ty: 150,
     });
 
+    // Octorok lanes + bats (~12).
     for (tx, ty, kind) in [
         (170u32, 125, SpawnKind::Octorok),
+        (180, 125, SpawnKind::Octorok),
         (200, 135, SpawnKind::Bat),
-        (185, 155, SpawnKind::Slime),
-        (210, 165, SpawnKind::Octorok),
+        (210, 145, SpawnKind::Octorok),
+        (185, 155, SpawnKind::Bat),
+        (205, 155, SpawnKind::Octorok),
         (175, 170, SpawnKind::Bat),
-        (220, 140, SpawnKind::Slime),
-        (195, 120, SpawnKind::Octorok),
-        (165, 150, SpawnKind::Bat),
+        (220, 140, SpawnKind::Octorok),
+        (195, 120, SpawnKind::Bat),
+        (165, 150, SpawnKind::Octorok),
+        (215, 160, SpawnKind::Bat),
+        (200, 170, SpawnKind::Octorok),
     ] {
         map.spawns.push(SpawnDef {
             tx,
             ty,
             kind,
-            group: 50,
+            group: flags::GRP_RUINS,
         });
     }
 }

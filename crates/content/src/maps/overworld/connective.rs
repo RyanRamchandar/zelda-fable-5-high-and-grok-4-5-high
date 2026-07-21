@@ -1,9 +1,10 @@
 //! River, roads, bridges, south meadow.
 
+use crate::flags;
 use crate::maps::catalog::*;
 use crate::maps::paint::{self, path, river, scatter, scatter_detail};
 use crate::maps::{
-    EntryPoint, MapDef, RegionDef, SpawnDef, SpawnKind, TileLayer, TriggerDef, TriggerKind,
+    EntryPoint, Loot, MapDef, RegionDef, SpawnDef, SpawnKind, TileLayer, TriggerDef, TriggerKind,
 };
 
 pub fn paint(map: &mut MapDef) {
@@ -49,8 +50,45 @@ pub fn paint(map: &mut MapDef) {
     stamp_bridge_h(map, 118, 141);
     stamp_bridge_h(map, 176, 147);
 
-    // Broken bridge grove→cliffs ~(66,94).
+    // Broken bridge grove→cliffs ~(66,94) + river island via ledge hops.
     stamp_bridge_broken(map, 64, 93);
+    map.set(62, 92, TileLayer::Ground, T_LEDGE_S);
+    map.set(63, 92, TileLayer::Ground, T_LEDGE_S);
+    map.fill_rect_layer(66, 96, 70, 100, TileLayer::Ground, T_GRASS_A);
+    map.set(68, 98, TileLayer::Ground, T_PATH);
+    map.spawns.push(SpawnDef {
+        tx: 68,
+        ty: 98,
+        kind: SpawnKind::Chest {
+            flag: flags::CHEST_RIVER_ISLAND,
+            loot: Loot::Rupees(25),
+        },
+        group: 0,
+    });
+
+    // Meadow flower ring (secret #9).
+    for (dx, dy) in [
+        (0i32, -2),
+        (2, -1),
+        (2, 1),
+        (0, 2),
+        (-2, 1),
+        (-2, -1),
+    ] {
+        let x = (150i32 + dx) as u32;
+        let y = (220i32 + dy) as u32;
+        map.set(x, y, TileLayer::Ground, T_GRASS_FLOWER);
+    }
+    map.set(150, 220, TileLayer::Ground, T_GRASS_A);
+    map.triggers.push(TriggerDef {
+        tx: 149,
+        ty: 219,
+        w: 3,
+        h: 3,
+        kind: TriggerKind::Secret {
+            flag: flags::SECRET_MEADOW_FLOWERS,
+        },
+    });
 
     // Dirt roads: village ↔ regions (winding).
     path(
@@ -108,20 +146,18 @@ pub fn paint(map: &mut MapDef) {
         ty: 206,
     });
 
-    // Placeholder spawns.
+    // Sparse meadow / road hostiles (off spine).
     for (tx, ty, kind) in [
-        (110u32, 210, SpawnKind::Slime),
-        (130, 220, SpawnKind::Slime),
-        (160, 215, SpawnKind::Bat),
-        (190, 222, SpawnKind::Octorok),
-        (200, 205, SpawnKind::Slime),
-        (95, 215, SpawnKind::Bat),
+        (130u32, 220, SpawnKind::Slime),
+        (160, 215, SpawnKind::Slime),
+        (200, 225, SpawnKind::Bat),
+        (95, 218, SpawnKind::Slime),
     ] {
         map.spawns.push(SpawnDef {
             tx,
             ty,
             kind,
-            group: 10,
+            group: flags::GRP_MEADOW,
         });
     }
 }

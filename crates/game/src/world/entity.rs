@@ -1,4 +1,7 @@
-//! Entity arena types. Phase 1B extends `EntityKind` / `EntityData` — keep matches exhaustive.
+//! Entity arena types. Phase 1B/2B extend `EntityKind` / `EntityData` — keep matches exhaustive.
+
+use content::maps::Loot;
+use content::text::{NpcId, TextId};
 
 use crate::math::{Dir4, Vec2};
 
@@ -21,6 +24,10 @@ pub enum EntityKind {
     Bat,
     Octorok,
     OctorokRock,
+    Sign,
+    Npc,
+    Chest,
+    Gem,
 }
 
 /// Collision layer bits (bitmask).
@@ -68,6 +75,34 @@ pub enum EntityData {
     Bat(BatData),
     Octorok(OctorokData),
     Rock(RockData),
+    Sign(SignData),
+    Npc(NpcData),
+    Chest(ChestData),
+    Gem(GemData),
+}
+
+#[derive(Clone, Debug)]
+pub struct SignData {
+    pub text: TextId,
+}
+
+#[derive(Clone, Debug)]
+pub struct NpcData {
+    pub npc: NpcId,
+}
+
+#[derive(Clone, Debug)]
+pub struct ChestData {
+    pub flag: u16,
+    pub loot: Loot,
+    pub open: bool,
+    pub open_anim: u8,
+}
+
+#[derive(Clone, Debug)]
+pub struct GemData {
+    pub id: u8,
+    pub taken: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -333,10 +368,98 @@ impl Entity {
         }
     }
 
+    pub fn sign(pos: Vec2, text: TextId) -> Self {
+        Self {
+            kind: EntityKind::Sign,
+            pos,
+            vel: Vec2::ZERO,
+            facing: Dir4::Down,
+            body: Some(Body {
+                half: Vec2::new(8.0, 8.0),
+                solid: true,
+                layer: layer::ENEMY_BODY,
+                mask: 0,
+            }),
+            health: None,
+            knockback: Vec2::ZERO,
+            anim: AnimState::default(),
+            data: EntityData::Sign(SignData { text }),
+            alive: true,
+        }
+    }
+
+    pub fn npc(pos: Vec2, npc: NpcId) -> Self {
+        Self {
+            kind: EntityKind::Npc,
+            pos,
+            vel: Vec2::ZERO,
+            facing: Dir4::Down,
+            body: Some(Body {
+                half: Vec2::new(8.0, 8.0),
+                solid: true,
+                layer: layer::ENEMY_BODY,
+                mask: 0,
+            }),
+            health: None,
+            knockback: Vec2::ZERO,
+            anim: AnimState::default(),
+            data: EntityData::Npc(NpcData { npc }),
+            alive: true,
+        }
+    }
+
+    pub fn chest(pos: Vec2, flag: u16, loot: Loot, open: bool) -> Self {
+        Self {
+            kind: EntityKind::Chest,
+            pos,
+            vel: Vec2::ZERO,
+            facing: Dir4::Down,
+            body: Some(Body {
+                half: Vec2::new(8.0, 8.0),
+                solid: true,
+                layer: layer::ENEMY_BODY,
+                mask: 0,
+            }),
+            health: None,
+            knockback: Vec2::ZERO,
+            anim: AnimState {
+                frame: if open { 1 } else { 0 },
+                ..AnimState::default()
+            },
+            data: EntityData::Chest(ChestData {
+                flag,
+                loot,
+                open,
+                open_anim: 0,
+            }),
+            alive: true,
+        }
+    }
+
+    pub fn gem(pos: Vec2, id: u8, taken: bool) -> Self {
+        Self {
+            kind: EntityKind::Gem,
+            pos,
+            vel: Vec2::ZERO,
+            facing: Dir4::Down,
+            body: Some(Body {
+                half: Vec2::new(8.0, 8.0),
+                solid: true,
+                layer: layer::ENEMY_BODY,
+                mask: 0,
+            }),
+            health: None,
+            knockback: Vec2::ZERO,
+            anim: AnimState::default(),
+            data: EntityData::Gem(GemData { id, taken }),
+            alive: true,
+        }
+    }
+
     pub fn center(&self) -> Vec2 {
         // Body is bottom-aligned for player (16×16 collision under 16×24 sprite).
         match self.kind {
-            EntityKind::Player => Vec2::new(self.pos.x + 8.0, self.pos.y + 8.0),
+            EntityKind::Player | EntityKind::Npc => Vec2::new(self.pos.x + 8.0, self.pos.y + 8.0),
             _ => {
                 if let Some(b) = self.body {
                     Vec2::new(self.pos.x + b.half.x, self.pos.y + b.half.y)

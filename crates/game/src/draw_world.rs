@@ -391,6 +391,54 @@ pub fn render_entity(d: &mut Draw, e: &Entity, sprites: &SpriteMap) {
             d.rect(e.pos.x, e.pos.y, 6.0, 6.0, "#ff6060");
         }
         EntityKind::FairyFountain => {}
+        EntityKind::Sign => {
+            if let Some(h) = sprites.get("prop_sign") {
+                d.sprite(h, 0, e.pos.x, e.pos.y, false);
+            } else {
+                d.rect(e.pos.x, e.pos.y, 16.0, 16.0, "#c0a060");
+            }
+        }
+        EntityKind::Npc => {
+            let key = match &e.data {
+                EntityData::Npc(n) => content::text::npc_sprite(n.npc),
+                _ => "npc_villager_a",
+            };
+            if let Some(h) = sprites.get(key) {
+                d.sprite(
+                    h,
+                    e.anim.frame as u32,
+                    e.pos.x,
+                    e.pos.y - 8.0,
+                    e.facing == Dir4::Left,
+                );
+            } else {
+                d.rect(e.pos.x, e.pos.y - 8.0, 16.0, 24.0, "#80c080");
+            }
+        }
+        EntityKind::Chest => {
+            let frame = match &e.data {
+                EntityData::Chest(c) if c.open => 1,
+                _ => 0,
+            };
+            if let Some(h) = sprites.get("prop_chest") {
+                d.sprite(h, frame, e.pos.x, e.pos.y, false);
+            } else {
+                d.rect(e.pos.x, e.pos.y, 16.0, 16.0, "#b08040");
+            }
+        }
+        EntityKind::Gem => {
+            let taken = matches!(&e.data, EntityData::Gem(g) if g.taken);
+            if taken {
+                if let Some(h) = sprites.get("prop_pedestal") {
+                    d.sprite(h, 0, e.pos.x, e.pos.y, false);
+                }
+            } else if let Some(h) = sprites.get("prop_gem") {
+                let frame = ((e.anim.timer / 16) % 2) as u32;
+                d.sprite(h, frame, e.pos.x, e.pos.y, false);
+            } else {
+                d.rect(e.pos.x + 4.0, e.pos.y + 4.0, 8.0, 8.0, "#40e0ff");
+            }
+        }
     }
 }
 

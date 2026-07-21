@@ -1,7 +1,9 @@
-//! HUD, overlays, F2 sprite viewer, region banners.
+//! HUD, overlays, F2 sprite viewer, region banners, dialog, minimap.
 
 pub mod banner;
+pub mod dialog;
 pub mod hud;
+pub mod minimap;
 pub mod viewer;
 
 use content::maps::MapId;
@@ -13,6 +15,8 @@ use crate::fx::FxState;
 use crate::world::World;
 
 pub use banner::BannerState;
+pub use dialog::DialogState;
+pub use minimap::MinimapState;
 pub use viewer::SpriteViewer;
 
 pub struct UiState {
@@ -22,6 +26,8 @@ pub struct UiState {
     pub fps_accum: u32,
     pub viewer: SpriteViewer,
     pub banner: BannerState,
+    pub dialog: DialogState,
+    pub minimap: MinimapState,
 }
 
 impl UiState {
@@ -33,6 +39,8 @@ impl UiState {
             fps_accum: 0,
             viewer: SpriteViewer::new(),
             banner: BannerState::new(),
+            dialog: DialogState::new(),
+            minimap: MinimapState::new(),
         }
     }
 }
@@ -75,6 +83,7 @@ pub fn render_debug(
         MapId::Overworld => "OW",
         MapId::Arena => "Arena",
         MapId::Shop => "Shop",
+        MapId::ShrineLobby => "Lobby",
         MapId::House(n) => return_house_label(n),
         MapId::Cave(n) => return_cave_label(n),
     };

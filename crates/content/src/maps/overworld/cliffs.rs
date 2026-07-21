@@ -1,5 +1,6 @@
 //! Razor Cliffs shell (40..160, 16..92) — elevation bands + ledge hops.
 
+use crate::flags;
 use crate::maps::catalog::*;
 use crate::maps::paint::path;
 use crate::maps::{
@@ -68,11 +69,13 @@ pub fn paint(map: &mut MapDef) {
         map.set(x + 1, y + 2, TileLayer::Ground, T_PATH);
     }
 
-    // Summit pocket + cave mouth for heart-piece cave (2B).
+    // Summit pocket + cave mouth (hidden notch) + birds telegraph.
     map.fill_rect_layer(112, 20, 130, 30, TileLayer::Ground, T_CLIFF_TOP);
     map.fill_rect_layer(116, 22, 126, 28, TileLayer::Ground, T_PATH);
     map.set(120, 22, TileLayer::Ground, T_CAVE_MOUTH);
     map.set_flags(120, 22, 0);
+    map.set(120, 20, TileLayer::Overhang, T_BIRDS);
+    map.set(100, 30, TileLayer::Ground, T_SHRINE_STONE); // vista interact
     map.triggers.push(TriggerDef {
         tx: 120,
         ty: 22,
@@ -119,21 +122,26 @@ pub fn paint(map: &mut MapDef) {
         ty: 88,
     });
 
+    // Octoroks on upper bands, slimes on landings (~12).
     for (tx, ty, kind) in [
-        (75u32, 70, SpawnKind::Bat),
-        (95, 55, SpawnKind::Octorok),
-        (110, 65, SpawnKind::Bat),
-        (60, 80, SpawnKind::Slime),
-        (130, 50, SpawnKind::Bat),
+        (95u32, 55, SpawnKind::Octorok),
         (100, 35, SpawnKind::Octorok),
+        (110, 32, SpawnKind::Octorok),
+        (85, 40, SpawnKind::Octorok),
+        (130, 50, SpawnKind::Octorok),
+        (75, 70, SpawnKind::Slime),
+        (60, 80, SpawnKind::Slime),
+        (110, 65, SpawnKind::Slime),
         (140, 75, SpawnKind::Slime),
-        (85, 40, SpawnKind::Bat),
+        (90, 80, SpawnKind::Bat),
+        (120, 48, SpawnKind::Bat),
+        (100, 72, SpawnKind::Slime),
     ] {
         map.spawns.push(SpawnDef {
             tx,
             ty,
             kind,
-            group: 60,
+            group: flags::GRP_CLIFFS,
         });
     }
 }

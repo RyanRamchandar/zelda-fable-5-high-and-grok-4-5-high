@@ -44,7 +44,11 @@ fn update_enemies(world: &mut World, _input: &InputState) {
             | EntityKind::Pickup
             | EntityKind::SwordBeam
             | EntityKind::FairyFountain
-            | EntityKind::DebugShot => {}
+            | EntityKind::DebugShot
+            | EntityKind::Sign
+            | EntityKind::Npc
+            | EntityKind::Chest
+            | EntityKind::Gem => {}
         }
     }
     octorok::update_rocks(world);

@@ -114,6 +114,11 @@ fn apply_key(state: &mut SharedInput, code: &str, down: bool) -> bool {
                 state.debug_pulse[DEBUG_TELEPORT] = true;
             }
         }
+        "KeyM" => {
+            if down {
+                state.minimap_pulse = true;
+            }
+        }
         _ => handled = false,
     }
     handled

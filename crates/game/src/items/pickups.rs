@@ -129,7 +129,16 @@ pub fn spawn_drops(world: &mut World, pos: Vec2) {
     }
 }
 
-fn spawn_one(world: &mut World, pos: Vec2, kind: PickupKind) {
+pub fn spawn_rupees(world: &mut World, pos: Vec2, n: u32) {
+    let n = n.min(40);
+    for i in 0..n {
+        let ox = ((i % 5) as f32 - 2.0) * 3.0;
+        let oy = ((i / 5) as f32) * 2.0;
+        spawn_one(world, pos.add(Vec2::new(ox, oy)), PickupKind::Rupee);
+    }
+}
+
+pub fn spawn_one(world: &mut World, pos: Vec2, kind: PickupKind) {
     world.spawn(Entity {
         kind: EntityKind::Pickup,
         pos: pos.sub(Vec2::new(3.0, 3.0)),

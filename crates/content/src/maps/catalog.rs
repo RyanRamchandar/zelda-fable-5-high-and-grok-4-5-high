@@ -92,6 +92,28 @@ pub const T_PILLAR: u16 = 205;
 pub const T_INT_FLOOR: u16 = 206;
 pub const T_INT_WALL: u16 = 207;
 
+// —— 240+ Phase 2B props (detail/overhang; mostly non-solid) ——
+pub const T_LANTERN: u16 = 240;
+pub const T_FLOWER_BED: u16 = 241;
+pub const T_STALL: u16 = 242;
+pub const T_BASIN: u16 = 243;
+pub const T_TENT: u16 = 244;
+pub const T_BONFIRE: u16 = 245;
+pub const T_CRACKED_WALL: u16 = 246;
+pub const T_CHIME: u16 = 247;
+pub const T_BIRDS: u16 = 248;
+pub const T_RUBBLE: u16 = 249;
+pub const T_BRAZIER: u16 = 250;
+pub const T_PALE_TREE: u16 = 251;
+pub const T_PEDESTAL: u16 = 252;
+pub const T_RUG: u16 = 253;
+pub const T_TABLE: u16 = 254;
+pub const T_BED: u16 = 255;
+pub const T_SHELF: u16 = 256;
+pub const T_COUNTER: u16 = 257;
+pub const T_POT: u16 = 258;
+pub const T_DOOR_OPEN: u16 = 259;
+
 /// Compatibility aliases (Phase 1 consumers / arena builder).
 pub const FLOOR: u16 = T_FLOOR_A;
 pub const WALL: u16 = T_WALL;
@@ -202,6 +224,26 @@ pub fn tile_info(id: u16) -> &'static TileInfo {
         T_PILLAR => &TI_PILLAR,
         T_INT_FLOOR => &TI_INT_FLOOR,
         T_INT_WALL => &TI_INT_WALL,
+        T_LANTERN => &TI_LANTERN,
+        T_FLOWER_BED => &TI_FLOWER_BED,
+        T_STALL => &TI_STALL,
+        T_BASIN => &TI_BASIN,
+        T_TENT => &TI_TENT,
+        T_BONFIRE => &TI_BONFIRE,
+        T_CRACKED_WALL => &TI_CRACKED,
+        T_CHIME => &TI_CHIME,
+        T_BIRDS => &TI_BIRDS,
+        T_RUBBLE => &TI_RUBBLE,
+        T_BRAZIER => &TI_BRAZIER,
+        T_PALE_TREE => &TI_PALE_TREE,
+        T_PEDESTAL => &TI_PEDESTAL,
+        T_RUG => &TI_RUG,
+        T_TABLE => &TI_TABLE,
+        T_BED => &TI_BED,
+        T_SHELF => &TI_SHELF,
+        T_COUNTER => &TI_COUNTER,
+        T_POT => &TI_POT,
+        T_DOOR_OPEN => &TI_DOOR_OPEN,
         _ => &VOID,
     }
 }
@@ -267,6 +309,26 @@ pub fn all_tile_ids() -> &'static [u16] {
         T_PILLAR,
         T_INT_FLOOR,
         T_INT_WALL,
+        T_LANTERN,
+        T_FLOWER_BED,
+        T_STALL,
+        T_BASIN,
+        T_TENT,
+        T_BONFIRE,
+        T_CRACKED_WALL,
+        T_CHIME,
+        T_BIRDS,
+        T_RUBBLE,
+        T_BRAZIER,
+        T_PALE_TREE,
+        T_PEDESTAL,
+        T_RUG,
+        T_TABLE,
+        T_BED,
+        T_SHELF,
+        T_COUNTER,
+        T_POT,
+        T_DOOR_OPEN,
     ]
 }
 
@@ -353,3 +415,43 @@ static TI_FOUNTAIN: TileInfo = TileInfo {
 static TI_PILLAR: TileInfo = solid("pillar");
 static TI_INT_FLOOR: TileInfo = walk("int_floor");
 static TI_INT_WALL: TileInfo = solid("int_wall");
+static TI_LANTERN: TileInfo = TileInfo {
+    sprite: "prop_lantern",
+    frames: 2,
+    anim_rate: 20,
+    flags: 0,
+};
+static TI_FLOWER_BED: TileInfo = walk("prop_flower_bed");
+static TI_STALL: TileInfo = solid("prop_stall");
+static TI_BASIN: TileInfo = walk("prop_basin");
+static TI_TENT: TileInfo = solid("prop_tent");
+static TI_BONFIRE: TileInfo = TileInfo {
+    sprite: "prop_bonfire",
+    frames: 2,
+    anim_rate: 12,
+    flags: flags::SOLID,
+};
+static TI_CRACKED: TileInfo = solid("prop_cracked");
+static TI_CHIME: TileInfo = walk("prop_chime");
+static TI_BIRDS: TileInfo = TileInfo {
+    sprite: "prop_birds",
+    frames: 2,
+    anim_rate: 18,
+    flags: 0,
+};
+static TI_RUBBLE: TileInfo = walk("prop_rubble");
+static TI_BRAZIER: TileInfo = TileInfo {
+    sprite: "prop_brazier",
+    frames: 2,
+    anim_rate: 14,
+    flags: flags::SOLID,
+};
+static TI_PALE_TREE: TileInfo = solid("prop_pale_tree");
+static TI_PEDESTAL: TileInfo = solid("prop_pedestal");
+static TI_RUG: TileInfo = walk("prop_rug");
+static TI_TABLE: TileInfo = solid("prop_table");
+static TI_BED: TileInfo = solid("prop_bed");
+static TI_SHELF: TileInfo = solid("prop_shelf");
+static TI_COUNTER: TileInfo = solid("prop_counter");
+static TI_POT: TileInfo = solid("prop_pot");
+static TI_DOOR_OPEN: TileInfo = walk("cave_mouth");

@@ -38,6 +38,8 @@ pub struct InputState {
     pub debug: [Button; DEBUG_COUNT],
     pub touch_active: bool,
     pub touch_overlay: TouchOverlay,
+    /// Edge pulse for KeyM (corner minimap toggle). Phase 2B.
+    pub minimap_toggle: bool,
 }
 
 impl Default for InputState {
@@ -48,6 +50,7 @@ impl Default for InputState {
             debug: [Button::default(); DEBUG_COUNT],
             touch_active: false,
             touch_overlay: TouchOverlay::default(),
+            minimap_toggle: false,
         }
     }
 }
@@ -70,6 +73,7 @@ pub(crate) struct SharedInput {
     pub prev_debug: [bool; DEBUG_COUNT],
     /// Latched on keydown so brief F1/F2/H taps still register as pressed.
     pub debug_pulse: [bool; DEBUG_COUNT],
+    pub minimap_pulse: bool,
     pub touch: touch::TouchState,
 }
 
@@ -86,6 +90,7 @@ impl SharedInput {
             debug_held: [false; DEBUG_COUNT],
             prev_debug: [false; DEBUG_COUNT],
             debug_pulse: [false; DEBUG_COUNT],
+            minimap_pulse: false,
             touch: touch::TouchState::new(),
         }
     }
@@ -156,12 +161,14 @@ impl Input {
                 pressed: pulse || (held && !prev),
             };
         }
+        let minimap_toggle = s.minimap_pulse;
         InputState {
             move_vec: s.merged_move(),
             buttons,
             debug,
             touch_active: s.touch.touch_active,
             touch_overlay: s.touch.overlay_geometry(),
+            minimap_toggle,
         }
     }
 
@@ -170,5 +177,6 @@ impl Input {
         s.prev_held = s.held();
         s.prev_debug = s.debug_held;
         s.debug_pulse = [false; DEBUG_COUNT];
+        s.minimap_pulse = false;
     }
 }

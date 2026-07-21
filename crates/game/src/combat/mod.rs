@@ -113,7 +113,11 @@ pub fn resolve_hits(world: &mut World) {
                 | EntityKind::FairyFountain
                 | EntityKind::Slime
                 | EntityKind::Bat
-                | EntityKind::Octorok => None,
+                | EntityKind::Octorok
+                | EntityKind::Sign
+                | EntityKind::Npc
+                | EntityKind::Chest
+                | EntityKind::Gem => None,
             }
         };
         let Some((kind, from_player, center, dir, damage, knockback, swing_id, hit, _is_beam)) =

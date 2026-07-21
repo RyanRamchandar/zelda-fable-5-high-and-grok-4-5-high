@@ -1,11 +1,11 @@
 //! Game mode + map transitions + trigger handling.
 
 use content::audio::sfx::SfxId;
-use content::maps::{self, MapId, TriggerKind, TILE_PX};
+use content::maps::{self, MapId, TileLayer, TriggerKind, TILE_PX};
 
 use crate::fx::FxKind;
 use crate::math::Vec2;
-use crate::save_data::SaveGame;
+use crate::save_data::{has_flag, set_flag, save_flags, SaveGame};
 use crate::world::entity::{EntityData, PlayerData, PlayerState};
 use crate::world::{Spawner, World, WorldEvent};
 use crate::Game;
@@ -80,7 +80,12 @@ pub fn switch_map(game: &mut Game, target: MapId, entry: u8) {
     let mut world = World::new(target, map, spawn);
     world.checkpoint = persist.checkpoint;
     apply_persist(&mut world, &persist);
-    let spawner = Spawner::populate(&mut world);
+    let mut spawner = Spawner::populate(&mut world);
+    spawner.apply_save(&mut world, persist.gems, &persist.flags);
+    if target == MapId::Overworld {
+        restore_shrine_door(&mut world, &persist.flags);
+        game.ui.minimap.build_class_map(&world.map);
+    }
     world.camera.snap_to(spawn.add(Vec2::new(8.0, 8.0)));
     game.world = world;
     game.spawner = spawner;
@@ -186,6 +191,38 @@ pub fn save_from_game(game: &Game) -> SaveGame {
         rupees,
         gems: game.gems,
         flags: game.flags.clone(),
+        fog: game.ui.minimap.fog_bits(),
+    }
+}
+
+pub fn restore_shrine_door(world: &mut World, flags: &[u16]) {
+    use crate::save_data::{has_flag, save_flags};
+    use content::maps::catalog;
+    if !has_flag(flags, save_flags::DOOR_SHRINE_OPEN) {
+        return;
+    }
+    world.set_tile(TileLayer::Ground, 120, 10, catalog::T_CAVE_MOUTH);
+    world.set_tile(TileLayer::Ground, 119, 10, catalog::T_PATH);
+    world.set_tile(TileLayer::Ground, 121, 10, catalog::T_PATH);
+    if !world.map.triggers.iter().any(|t| {
+        matches!(
+            t.kind,
+            TriggerKind::Door {
+                target: MapId::ShrineLobby,
+                ..
+            }
+        )
+    }) {
+        world.map.triggers.push(content::maps::TriggerDef {
+            tx: 120,
+            ty: 10,
+            w: 1,
+            h: 1,
+            kind: TriggerKind::Door {
+                target: MapId::ShrineLobby,
+                entry: 0,
+            },
+        });
     }
 }
 
@@ -231,8 +268,31 @@ pub fn check_triggers(game: &mut Game) -> Option<String> {
                     immediate_save = save_from_game(game).to_json();
                 }
             }
+            TriggerKind::Secret { flag } => {
+                if set_flag(&mut game.flags, flag) {
+                    game.world
+                        .push_event(WorldEvent::Sfx(SfxId::SecretChime));
+                    game.world.push_event(WorldEvent::FxRequest(FxKind::Toast {
+                        text: "SECRET!",
+                    }));
+                    if flag == save_flags::SECRET_MEADOW_FLOWERS {
+                        // Fairy + energy refill.
+                        if let Some(p) = game.world.get_mut(game.world.player_id) {
+                            if let EntityData::Player(pd) = &mut p.data {
+                                pd.energy = 100.0;
+                            }
+                        }
+                        game.world.push_event(WorldEvent::FxRequest(FxKind::Toast {
+                            text: "FAIRY!",
+                        }));
+                    }
+                    game.ui.minimap.mark_discovered_secret();
+                    immediate_save = save_from_game(game).to_json();
+                }
+            }
         }
     }
+    let _ = has_flag;
     immediate_save
 }
 

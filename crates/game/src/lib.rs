@@ -5,6 +5,7 @@ mod combat;
 mod draw_world;
 mod enemies;
 mod fx;
+mod interact;
 mod items;
 mod math;
 mod player;
@@ -52,7 +53,7 @@ pub struct Game {
     pub(crate) flags: Vec<u16>,
     pub(crate) chunk_cache_reset: bool,
     fx: FxState,
-    ui: UiState,
+    pub(crate) ui: UiState,
     sprites: SpriteMap,
     tile_sprites: TileSprites,
     chunk_cache: Option<ChunkCache>,
@@ -96,10 +97,16 @@ impl Game {
                 h.max = save.max_hearts;
             }
         }
-        let spawner = Spawner::populate(&mut world);
+        let mut spawner = Spawner::populate(&mut world);
+        spawner.apply_save(&mut world, save.gems, &save.flags);
+        state::restore_shrine_door(&mut world, &save.flags);
         debug_assert_door_entries(&world);
 
         let chunk_cache = ChunkCache::new(48).ok();
+        let mut ui = UiState::new();
+        ui.minimap.load_fog(&save.fog);
+        ui.minimap.build_class_map(&world.map);
+        ui.minimap.refresh_objective(save.gems, &save.flags);
 
         Self {
             world,
@@ -110,7 +117,7 @@ impl Game {
             flags: save.flags,
             chunk_cache_reset: true,
             fx: FxState::new(),
-            ui: UiState::new(),
+            ui,
             sprites,
             tile_sprites,
             chunk_cache,
@@ -169,6 +176,21 @@ impl Game {
             return self.drain_events(input);
         }
 
+        // Dialog / pause-map pause world sim (viewer pattern).
+        self.ui.minimap.update(
+            input,
+            &self.world,
+            self.current_map,
+            self.gems,
+            &self.flags,
+        );
+        if self.ui.dialog.open || self.ui.minimap.pause_open {
+            if self.ui.dialog.open {
+                self.ui.dialog.update(input, &mut self.world);
+            }
+            return self.drain_events(input);
+        }
+
         self.world.tick = self.world.tick.wrapping_add(1);
         tick_entity_timers(&mut self.world);
         combat::tick_dummies(&mut self.world);
@@ -187,6 +209,12 @@ impl Game {
         }
 
         player::update(&mut self.world, input);
+        if let Some(json) = interact::update(self, input) {
+            self.pending_save = Some(json);
+        }
+        if self.ui.dialog.open {
+            return self.drain_events(input);
+        }
         self.spawner.update(&mut self.world);
         if self.current_map == MapId::Arena {
             enemies::update(&mut self.world, input, &mut self.waves);
@@ -296,6 +324,20 @@ impl Game {
                             .on_region(region, r.name, self.world.tick);
                     }
                 }
+                WorldEvent::GroupCleared(group) => {
+                    if group == content::flags::GRP_CAMP_GUARD {
+                        crate::save_data::set_flag(
+                            &mut self.flags,
+                            content::flags::GROUP_CAMP_GUARD,
+                        );
+                        self.fx.handle(
+                            FxKind::Toast {
+                                text: "GUARDS CLEARED",
+                            },
+                            &mut self.world.rng,
+                        );
+                    }
+                }
             }
         }
 
@@ -357,10 +399,31 @@ impl Game {
 
         self.fx.render_world(d);
 
+        if let Some(mark) = interact::prompt_target(&self.world) {
+            d.text("!", mark.x, mark.y, "#ffe040");
+        }
+
         d.set_offset(0.0, 0.0);
         ui::render_hud(d, &self.world, &self.sprites);
         self.fx.render_screen(d, &self.sprites);
         self.ui.banner.render(d);
+        self.ui.minimap.render_corner(
+            d,
+            &self.world,
+            &self.sprites,
+            self.current_map,
+            self.gems,
+            &self.flags,
+        );
+        self.ui.dialog.render(d, &self.sprites);
+        self.ui.minimap.render_pause(
+            d,
+            &self.world,
+            &self.sprites,
+            self.current_map,
+            self.gems,
+            &self.flags,
+        );
 
         let alpha = fade_alpha(&self.mode);
         if alpha > 0.01 {
@@ -446,7 +509,11 @@ fn integrate_non_player(world: &mut World) {
             EntityKind::Slime
             | EntityKind::Octorok
             | EntityKind::Bat
-            | EntityKind::OctorokRock => {}
+            | EntityKind::OctorokRock
+            | EntityKind::Sign
+            | EntityKind::Npc
+            | EntityKind::Chest
+            | EntityKind::Gem => {}
             EntityKind::Pickup
             | EntityKind::SwordBeam
             | EntityKind::DebugShot
@@ -514,23 +581,20 @@ fn player_state_label(world: &World) -> String {
 
 fn debug_assert_door_entries(world: &World) {
     for tr in &world.map.triggers {
-        if let TriggerKind::Door { target, entry } = tr.kind {
-            let dest = maps::build(target);
-            if let Some((tx, ty)) = dest.entry_pos(entry) {
-                // Entry should not sit inside a return door rect of dest.
-                for dtr in &dest.triggers {
-                    if let TriggerKind::Door { .. } = dtr.kind {
-                        let inside = tx >= dtr.tx
-                            && ty >= dtr.ty
-                            && tx < dtr.tx + dtr.w
-                            && ty < dtr.ty + dtr.h;
-                        debug_assert!(
-                            !inside,
-                            "door re-entry: {:?} entry {} inside return door",
-                            target, entry
-                        );
-                    }
-                }
+        let TriggerKind::Door { target, entry } = tr.kind else {
+            continue;
+        };
+        let dest = maps::build(target);
+        let Some((tx, ty)) = dest.entry_pos(entry) else {
+            continue;
+        };
+        for dtr in &dest.triggers {
+            if let TriggerKind::Door { .. } = dtr.kind {
+                let inside = tx >= dtr.tx
+                    && ty >= dtr.ty
+                    && tx < dtr.tx + dtr.w
+                    && ty < dtr.ty + dtr.h;
+                debug_assert!(!inside, "door re-entry: {target:?} entry {entry}");
             }
         }
     }

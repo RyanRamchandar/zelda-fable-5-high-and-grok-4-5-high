@@ -34,6 +34,7 @@ pub enum MapId {
     House(u8),
     Shop,
     Cave(u8),
+    ShrineLobby,
 }
 
 impl MapId {
@@ -42,6 +43,7 @@ impl MapId {
             MapId::Overworld => 0,
             MapId::Arena => 1,
             MapId::Shop => 2,
+            MapId::ShrineLobby => 3,
             MapId::House(n) => 10 + n.min(5),
             MapId::Cave(n) => 20 + n.min(1),
         }
@@ -52,11 +54,19 @@ impl MapId {
             0 => MapId::Overworld,
             1 => MapId::Arena,
             2 => MapId::Shop,
+            3 => MapId::ShrineLobby,
             10..=15 => MapId::House(v - 10),
             20..=21 => MapId::Cave(v - 20),
             _ => MapId::Overworld,
         }
     }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Loot {
+    Rupees(u32),
+    HeartPiece,
+    Gem(u8),
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -73,6 +83,10 @@ pub enum SpawnKind {
     Octorok,
     FairyFountain,
     Dummy,
+    Sign { text: crate::text::TextId },
+    Npc { npc: crate::text::NpcId },
+    Chest { flag: u16, loot: Loot },
+    Gem { id: u8 },
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -88,6 +102,7 @@ pub enum TriggerKind {
     Door { target: MapId, entry: u8 },
     Banner { region: u8 },
     Checkpoint { id: u8 },
+    Secret { flag: u16 },
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -278,5 +293,6 @@ pub fn build(id: MapId) -> MapDef {
         MapId::Shop => interiors::shop(),
         MapId::Cave(0) => interiors::cave_grotto(),
         MapId::Cave(_) => interiors::cave_heart(),
+        MapId::ShrineLobby => interiors::shrine_lobby(),
     }
 }
